@@ -116,4 +116,9 @@
     width: 1px;
     background: rgba(255, 255, 255, 0.08);
   }
+
+  /* 收起状态小图标 - 可拖动 */
+  .weather-widget-drag {
+    -webkit-app-region: drag;
+  }
 }
