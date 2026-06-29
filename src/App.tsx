@@ -19,8 +19,8 @@ const App: React.FC = () => {
 
   const handleCollapse = () => {
     setExpanded(false)
-    // 收起：窗口缩小到只包住小图标
-    window.electronAPI?.collapse()
+    // 收起：窗口恢复到小图标原来的位置
+    window.electronAPI?.restoreIcon()
   }
 
   const handleExpand = () => {

@@ -5,6 +5,7 @@ interface ElectronAPI {
   close: () => void
   collapse: () => void
   expand: () => void
+  restoreIcon: () => void
   selectICSFile: () => Promise<string | null>
 }
 

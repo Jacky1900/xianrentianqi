@@ -5,5 +5,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   close: () => ipcRenderer.send('window-close'),
   collapse: () => ipcRenderer.send('window-collapse'),
   expand: () => ipcRenderer.send('window-expand'),
+  restoreIcon: () => ipcRenderer.send('window-restore-icon'),
   selectICSFile: () => ipcRenderer.invoke('select-ics-file'),
 })
