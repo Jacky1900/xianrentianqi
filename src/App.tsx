@@ -18,23 +18,10 @@ const App: React.FC = () => {
   // 加载中
   if (weather.loading) {
     return (
-      <div style={{
-        height: '100vh',
-        background: '#1a1a1a',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
+      <div style={{ height: '100vh', background: '#000', display: 'flex', flexDirection: 'column' }}>
         <TitleBar onMinimize={handleMinimize} onClose={handleClose} />
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
-            <div style={{ fontSize: 13, color: '#888' }}>加载天气数据中...</div>
-          </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 13, opacity: 0.3 }}>loading…</span>
         </div>
       </div>
     )
@@ -43,25 +30,25 @@ const App: React.FC = () => {
   // 加载失败
   if (weather.error) {
     return (
-      <div style={{
-        height: '100vh',
-        background: '#1a1a1a',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
+      <div style={{ height: '100vh', background: '#000', display: 'flex', flexDirection: 'column' }}>
         <TitleBar onMinimize={handleMinimize} onClose={handleClose} />
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 20,
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>😢</div>
-            <div style={{ fontSize: 13, color: '#e53935', marginBottom: 8 }}>数据加载失败</div>
-            <div style={{ fontSize: 11, color: '#777' }}>{weather.error}</div>
-          </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 13, opacity: 0.4 }}>UNABLE TO UPDATE</div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'transparent',
+              border: '1px solid #333',
+              color: '#888',
+              padding: '6px 20px',
+              fontSize: 11,
+              cursor: 'pointer',
+              letterSpacing: 2,
+              fontFamily: 'Segoe UI Light, sans-serif',
+            }}
+          >
+            RETRY
+          </button>
         </div>
       </div>
     )
@@ -71,7 +58,7 @@ const App: React.FC = () => {
   return (
     <div style={{
       height: '100vh',
-      background: '#1a1a1a',
+      background: '#000000',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
@@ -81,13 +68,13 @@ const App: React.FC = () => {
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '10px 12px 16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
+        paddingBottom: 20,
       }}>
         {weather.current && (
-          <CurrentWeather data={weather.current} city={weather.city} />
+          <>
+            <CurrentWeather data={weather.current} city={weather.city} />
+            <div className="nokia-section-divider" />
+          </>
         )}
         {weather.daily.length > 0 && (
           <DailyForecast forecasts={weather.daily} />

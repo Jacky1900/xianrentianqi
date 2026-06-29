@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Nokia Lumia 经典天气风格 ===== */
+
 @layer base {
   * {
     margin: 0;
@@ -10,128 +12,173 @@
   }
 
   body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #1a1a1a;
-    color: #e0e0e0;
+    font-family: 'Segoe UI', 'Segoe WP', 'Segoe UI Light', 'Helvetica Neue', sans-serif;
+    background-color: #000000;
+    color: #ffffff;
     overflow: hidden;
     user-select: none;
     -webkit-app-region: no-drag;
   }
 
   ::-webkit-scrollbar {
-    width: 4px;
+    width: 3px;
   }
-
   ::-webkit-scrollbar-track {
-    background: #1a1a1a;
+    background: #000;
   }
-
   ::-webkit-scrollbar-thumb {
-    background: #444;
-    border-radius: 2px;
+    background: #333;
+    border-radius: 0;
   }
 }
 
 @layer components {
-  .titlebar {
+  /* 标题栏 */
+  .nokia-titlebar {
     -webkit-app-region: drag;
-    height: 36px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 12px;
-    background: #111;
-    border-bottom: 1px solid #333;
+    padding: 0 10px;
+    background: #000;
   }
 
-  .titlebar-btn {
+  .nokia-titlebar-btn {
     -webkit-app-region: no-drag;
-    width: 32px;
-    height: 24px;
+    width: 28px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
     background: transparent;
-    color: #888;
+    color: #555;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Segoe UI Symbol', 'Segoe UI', sans-serif;
+  }
+
+  .nokia-titlebar-btn:hover {
+    color: #fff;
+  }
+
+  .nokia-titlebar-btn.close:hover {
+    color: #ff4444;
+  }
+
+  /* 当前天气 - 超大温度 */
+  .nokia-temp {
+    font-size: 100px;
+    font-weight: 200;
+    line-height: 1;
+    letter-spacing: -4px;
+    font-family: 'Segoe UI Light', 'Segoe UI', sans-serif;
+  }
+
+  .nokia-degree {
+    font-size: 36px;
+    font-weight: 200;
+    vertical-align: super;
+    margin-left: 2px;
+    opacity: 0.5;
+  }
+
+  .nokia-city {
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0.5;
+    margin-bottom: 4px;
+  }
+
+  .nokia-condition {
+    font-size: 15px;
+    opacity: 0.6;
+    letter-spacing: 1px;
+  }
+
+  .nokia-detail {
+    font-size: 11px;
+    opacity: 0.4;
+    letter-spacing: 0.5px;
+  }
+
+  .nokia-detail-value {
     font-size: 14px;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.15s;
-  }
-
-  .titlebar-btn:hover {
-    background: #333;
-    color: #fff;
-  }
-
-  .titlebar-btn.close:hover {
-    background: #e53935;
-    color: #fff;
-  }
-
-  .lumia-panel {
-    background: #2a2a2a;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 12px;
-  }
-
-  .lumia-btn {
-    background: #333;
-    color: #e0e0e0;
-    border: 1px solid #444;
-    border-radius: 6px;
-    padding: 6px 16px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .lumia-btn:hover {
-    background: #444;
-    border-color: #666;
-  }
-
-  .lumia-btn:active {
-    background: #555;
-  }
-
-  .lumia-input {
-    background: #222;
-    border: 1px solid #444;
-    border-radius: 6px;
-    padding: 8px 12px;
-    color: #e0e0e0;
-    font-size: 12px;
-    outline: none;
-    width: 100%;
-    transition: border-color 0.15s;
-  }
-
-  .lumia-input:focus {
-    border-color: #4a90d9;
-  }
-
-  .weather-value {
-    font-size: 48px;
+    opacity: 0.7;
     font-weight: 300;
-    color: #e0e0e0;
-    letter-spacing: -1px;
+    font-family: 'Segoe UI Light', 'Segoe UI', sans-serif;
   }
 
-  .weather-unit {
-    font-size: 20px;
-    color: #888;
-    margin-left: 4px;
+  /* 7天预报 */
+  .nokia-forecast-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 14px;
+    transition: background 0.2s;
+  }
+
+  .nokia-forecast-row:hover {
+    background: #111;
+  }
+
+  .nokia-day {
+    flex: 0 0 70px;
+    font-size: 13px;
+    opacity: 0.6;
     font-weight: 300;
+    font-family: 'Segoe UI Light', 'Segoe UI', sans-serif;
   }
 
-  .temp-high {
-    color: #ff9800;
+  .nokia-day-icon {
+    flex: 0 0 32px;
+    font-size: 18px;
+    text-align: center;
   }
 
-  .temp-low {
-    color: #4a90d9;
+  .nokia-forecast-divider {
+    height: 1px;
+    background: #1a1a1a;
+    margin: 0 14px;
+  }
+
+  .nokia-temp-label {
+    font-size: 10px;
+    opacity: 0.35;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .nokia-temp-value {
+    font-size: 14px;
+    font-weight: 300;
+    font-family: 'Segoe UI Light', 'Segoe UI', sans-serif;
+  }
+
+  .nokia-hi {
+    color: #ffffff;
+    opacity: 0.8;
+  }
+
+  .nokia-lo {
+    color: #ffffff;
+    opacity: 0.35;
+  }
+
+  /* 分割线 */
+  .nokia-section-divider {
+    height: 1px;
+    background: #1a1a1a;
+    margin: 0 20px;
+  }
+
+  .nokia-section-title {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0.3;
+    padding: 0 14px;
+    margin-bottom: 2px;
   }
 }

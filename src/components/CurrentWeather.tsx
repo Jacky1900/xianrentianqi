@@ -8,33 +8,43 @@ interface Props {
 
 const CurrentWeather: React.FC<Props> = ({ data, city }) => {
   return (
-    <div className="lumia-panel" style={{ textAlign: 'center', padding: '20px 12px' }}>
+    <div style={{ padding: '16px 0 8px', textAlign: 'center' }}>
       {/* 城市名 */}
-      <div style={{ fontSize: 14, color: '#888', marginBottom: 6 }}>{city}</div>
+      <div className="nokia-city">{city}</div>
 
-      {/* 天气图标和描述 */}
-      <div style={{ fontSize: 56, marginBottom: 4 }}>{data.weatherIcon}</div>
-      <div style={{ fontSize: 13, color: '#aaa', marginBottom: 12 }}>{data.weatherLabel}</div>
+      {/* 天气图标 */}
+      <div style={{ fontSize: 52, marginBottom: 6, lineHeight: 1 }}>
+        {data.weatherIcon}
+      </div>
 
-      {/* 温度 */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', marginBottom: 16 }}>
-        <span className="weather-value">{data.temperature}</span>
-        <span className="weather-unit">°C</span>
+      {/* 天气描述 */}
+      <div className="nokia-condition" style={{ marginBottom: 14 }}>
+        {data.weatherLabel}
+      </div>
+
+      {/* 超大温度 */}
+      <div style={{ marginBottom: 20 }}>
+        <span className="nokia-temp">{data.temperature}</span>
+        <span className="nokia-degree">°</span>
       </div>
 
       {/* 详细信息 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-        <div>
-          <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>体感温度</div>
-          <div style={{ fontSize: 16, color: '#e0e0e0' }}>{data.apparentTemperature}°</div>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 40,
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="nokia-detail">FEELS LIKE</div>
+          <div className="nokia-detail-value">{data.apparentTemperature}°</div>
         </div>
-        <div>
-          <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>湿度</div>
-          <div style={{ fontSize: 16, color: '#e0e0e0' }}>{data.humidity}%</div>
+        <div style={{ textAlign: 'center' }}>
+          <div className="nokia-detail">HUMIDITY</div>
+          <div className="nokia-detail-value">{data.humidity}%</div>
         </div>
-        <div>
-          <div style={{ fontSize: 10, color: '#666', marginBottom: 2 }}>风速</div>
-          <div style={{ fontSize: 16, color: '#e0e0e0' }}>{data.windSpeed} km/h</div>
+        <div style={{ textAlign: 'center' }}>
+          <div className="nokia-detail">WIND</div>
+          <div className="nokia-detail-value">{data.windSpeed}</div>
         </div>
       </div>
     </div>

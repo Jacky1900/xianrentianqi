@@ -7,41 +7,50 @@ interface Props {
 
 const DailyForecast: React.FC<Props> = ({ forecasts }) => {
   return (
-    <div className="lumia-panel" style={{ padding: '12px 0' }}>
-      <div style={{ fontSize: 12, color: '#888', padding: '0 12px', marginBottom: 8 }}>
-        未来 7 天
-      </div>
+    <div style={{ paddingTop: 10 }}>
+      <div className="nokia-section-title">FORECAST</div>
       {forecasts.map((day, i) => (
-        <div
-          key={day.date}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '6px 12px',
-            borderBottom: i < forecasts.length - 1 ? '1px solid #333' : 'none',
-          }}
-        >
-          {/* 日期 */}
-          <div style={{ flex: '0 0 80px', fontSize: 12, color: '#aaa' }}>
-            {day.date}
-          </div>
+        <React.Fragment key={day.date}>
+          {i > 0 && <div className="nokia-forecast-divider" />}
+          <div className="nokia-forecast-row">
+            {/* 日期 */}
+            <div className="nokia-day">{day.date}</div>
 
-          {/* 天气图标 */}
-          <div style={{ flex: '0 0 36px', fontSize: 20, textAlign: 'center' }}>
-            {day.weatherIcon}
-          </div>
+            {/* 天气图标 */}
+            <div className="nokia-day-icon">{day.weatherIcon}</div>
 
-          {/* 天气描述 */}
-          <div style={{ flex: 1, fontSize: 11, color: '#777' }}>
-            {day.weatherLabel}
-          </div>
+            {/* 低温 */}
+            <div style={{ flex: '0 0 40px', textAlign: 'right', paddingRight: 6 }}>
+              <span className="nokia-lo nokia-temp-value">{day.tempMin}°</span>
+            </div>
 
-          {/* 温度 */}
-          <div style={{ display: 'flex', gap: 8, fontSize: 12 }}>
-            <span className="temp-low">{day.tempMin}°</span>
-            <span className="temp-high">{day.tempMax}°</span>
+            {/* 温度条 */}
+            <div style={{
+              flex: 1,
+              margin: '0 8px',
+              height: 2,
+              background: '#1a1a1a',
+              borderRadius: 1,
+              position: 'relative',
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: `${(day.tempMin / 40) * 100}%`,
+                width: `${Math.max(((day.tempMax - day.tempMin) / 40) * 100, 8)}%`,
+                height: '100%',
+                background: day.tempMax > 30 ? '#ff8c00' : day.tempMax < 15 ? '#4a90d9' : '#7ec850',
+                borderRadius: 1,
+                opacity: 0.8,
+              }} />
+            </div>
+
+            {/* 高温 */}
+            <div style={{ flex: '0 0 40px', textAlign: 'left', paddingLeft: 6 }}>
+              <span className="nokia-hi nokia-temp-value">{day.tempMax}°</span>
+            </div>
           </div>
-        </div>
+        </React.Fragment>
       ))}
     </div>
   )
