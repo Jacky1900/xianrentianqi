@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===== Nokia Lumia 经典天气风格 ===== */
+/* ===== Nokia Lumia 天气风格 ===== */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500&display=swap');
 
 @layer base {
   * {
@@ -12,12 +14,13 @@
   }
 
   body {
-    font-family: 'Segoe UI', 'Segoe WP', 'Segoe UI Light', 'Helvetica Neue', sans-serif;
-    background-color: #000000;
+    font-family: 'Noto Sans SC', 'Segoe UI', 'Segoe WP', 'Helvetica Neue', sans-serif;
+    background: linear-gradient(180deg, #0D1B2A 0%, #1B263B 50%, #243447 100%);
     color: #ffffff;
     overflow: hidden;
     user-select: none;
     -webkit-app-region: no-drag;
+    font-weight: 300;
   }
 
   ::-webkit-scrollbar {
@@ -34,7 +37,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 10px;
-    background: #000;
+    background: transparent;
   }
 
   .nokia-titlebar-btn {
@@ -46,7 +49,7 @@
     justify-content: center;
     border: none;
     background: transparent;
-    color: #444;
+    color: rgba(255, 255, 255, 0.4);
     font-size: 11px;
     cursor: pointer;
     font-family: 'Segoe UI Symbol', 'Segoe UI', sans-serif;
@@ -57,6 +60,38 @@
   }
 
   .nokia-titlebar-btn.close:hover {
-    color: #ff4444;
+    color: #ff6b6b;
+  }
+
+  .nokia-temp-large {
+    font-size: 96px;
+    font-weight: 200;
+    line-height: 1;
+    letter-spacing: -3px;
+    color: #ffffff;
+  }
+
+  .nokia-temp-degree {
+    font-size: 32px;
+    font-weight: 200;
+    color: rgba(255, 255, 255, 0.5);
+    vertical-align: super;
+  }
+
+  .nokia-label-small {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 2px;
+  }
+
+  .nokia-value-small {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 300;
+  }
+
+  .nokia-divider {
+    width: 1px;
+    background: rgba(255, 255, 255, 0.08);
   }
 }

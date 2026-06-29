@@ -19,11 +19,11 @@ const App: React.FC = () => {
   // 加载中
   if (weather.loading) {
     return (
-      <div style={{ height: '100vh', background: '#000', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
         <TitleBar onMinimize={handleMinimize} onClose={handleClose} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-          <WeatherIcon name="partly-cloudy" size={56} color="#333" />
-          <span style={{ fontSize: 12, color: '#444', letterSpacing: 4 }}>加载中…</span>
+          <WeatherIcon name="partly-cloudy" size={56} />
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', letterSpacing: 4, fontWeight: 300 }}>加载中…</span>
         </div>
       </div>
     )
@@ -32,21 +32,21 @@ const App: React.FC = () => {
   // 加载失败
   if (weather.error) {
     return (
-      <div style={{ height: '100vh', background: '#000', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
         <TitleBar onMinimize={handleMinimize} onClose={handleClose} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-          <div style={{ fontSize: 13, color: '#555', letterSpacing: 4 }}>无法更新天气</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', letterSpacing: 4, fontWeight: 300 }}>无法更新天气</div>
           <button
             onClick={() => window.location.reload()}
             style={{
               background: 'transparent',
-              border: '1px solid #222',
-              color: '#777',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: 'rgba(255,255,255,0.6)',
               padding: '6px 24px',
               fontSize: 11,
               cursor: 'pointer',
               letterSpacing: 4,
-              fontFamily: '"Segoe UI Light", sans-serif',
+              fontWeight: 300,
             }}
           >
             重试
@@ -60,7 +60,6 @@ const App: React.FC = () => {
   return (
     <div style={{
       height: '100vh',
-      background: '#000000',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
@@ -74,7 +73,7 @@ const App: React.FC = () => {
         {weather.current && (
           <>
             <CurrentWeather data={weather.current} city={weather.city} />
-            <div style={{ height: 1, background: '#1a1a1a', margin: '0 20px' }} />
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0 20px' }} />
           </>
         )}
         {weather.daily.length > 0 && (
