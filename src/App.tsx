@@ -2,6 +2,7 @@ import React from 'react'
 import TitleBar from './components/TitleBar'
 import CurrentWeather from './components/CurrentWeather'
 import DailyForecast from './components/DailyForecast'
+import WeatherIcon from './components/WeatherIcon'
 import { useWeather } from './hooks/useWeather'
 
 const App: React.FC = () => {
@@ -20,8 +21,9 @@ const App: React.FC = () => {
     return (
       <div style={{ height: '100vh', background: '#000', display: 'flex', flexDirection: 'column' }}>
         <TitleBar onMinimize={handleMinimize} onClose={handleClose} />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: 13, opacity: 0.3 }}>loading…</span>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+          <WeatherIcon name="partly-cloudy" size={56} color="#333" />
+          <span style={{ fontSize: 12, color: '#444', letterSpacing: 4 }}>加载中…</span>
         </div>
       </div>
     )
@@ -32,22 +34,22 @@ const App: React.FC = () => {
     return (
       <div style={{ height: '100vh', background: '#000', display: 'flex', flexDirection: 'column' }}>
         <TitleBar onMinimize={handleMinimize} onClose={handleClose} />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-          <div style={{ fontSize: 13, opacity: 0.4 }}>UNABLE TO UPDATE</div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+          <div style={{ fontSize: 13, color: '#555', letterSpacing: 4 }}>无法更新天气</div>
           <button
             onClick={() => window.location.reload()}
             style={{
               background: 'transparent',
-              border: '1px solid #333',
-              color: '#888',
-              padding: '6px 20px',
+              border: '1px solid #222',
+              color: '#777',
+              padding: '6px 24px',
               fontSize: 11,
               cursor: 'pointer',
-              letterSpacing: 2,
-              fontFamily: 'Segoe UI Light, sans-serif',
+              letterSpacing: 4,
+              fontFamily: '"Segoe UI Light", sans-serif',
             }}
           >
-            RETRY
+            重试
           </button>
         </div>
       </div>
@@ -68,12 +70,11 @@ const App: React.FC = () => {
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        paddingBottom: 20,
       }}>
         {weather.current && (
           <>
             <CurrentWeather data={weather.current} city={weather.city} />
-            <div className="nokia-section-divider" />
+            <div style={{ height: 1, background: '#1a1a1a', margin: '0 20px' }} />
           </>
         )}
         {weather.daily.length > 0 && (
