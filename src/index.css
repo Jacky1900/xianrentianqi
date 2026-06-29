@@ -15,12 +15,17 @@
 
   body {
     font-family: 'Noto Sans SC', 'Segoe UI', 'Segoe WP', 'Helvetica Neue', sans-serif;
-    background: linear-gradient(180deg, #0D1B2A 0%, #1B263B 50%, #243447 100%);
+    background: transparent;
     color: #ffffff;
     overflow: hidden;
     user-select: none;
     -webkit-app-region: no-drag;
     font-weight: 300;
+    border-radius: 14px;
+  }
+
+  html {
+    background: transparent;
   }
 
   ::-webkit-scrollbar {

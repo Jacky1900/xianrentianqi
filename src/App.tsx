@@ -5,6 +5,17 @@ import DailyForecast from './components/DailyForecast'
 import WeatherIcon from './components/WeatherIcon'
 import { useWeather } from './hooks/useWeather'
 
+// 窗口容器公共样式：圆角 + 渐变背景 + 阴影
+const containerStyle: React.CSSProperties = {
+  height: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  borderRadius: 14,
+  background: 'linear-gradient(180deg, #0D1B2A 0%, #1B263B 50%, #243447 100%)',
+  boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+}
+
 const App: React.FC = () => {
   const weather = useWeather()
 
@@ -19,7 +30,7 @@ const App: React.FC = () => {
   // 加载中
   if (weather.loading) {
     return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={containerStyle}>
         <TitleBar onMinimize={handleMinimize} onClose={handleClose} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
           <WeatherIcon name="partly-cloudy" size={56} />
@@ -32,7 +43,7 @@ const App: React.FC = () => {
   // 加载失败
   if (weather.error) {
     return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={containerStyle}>
         <TitleBar onMinimize={handleMinimize} onClose={handleClose} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', letterSpacing: 4, fontWeight: 300 }}>无法更新天气</div>
@@ -47,6 +58,7 @@ const App: React.FC = () => {
               cursor: 'pointer',
               letterSpacing: 4,
               fontWeight: 300,
+              borderRadius: 6,
             }}
           >
             重试
@@ -58,12 +70,7 @@ const App: React.FC = () => {
 
   // 正常显示
   return (
-    <div style={{
-      height: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-    }}>
+    <div style={containerStyle}>
       <TitleBar onMinimize={handleMinimize} onClose={handleClose} />
 
       <div style={{

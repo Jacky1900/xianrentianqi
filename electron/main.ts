@@ -9,8 +9,8 @@ function createWindow() {
     height: 700,
     resizable: true,
     frame: false,
+    transparent: true,
     alwaysOnTop: false,
-    backgroundColor: '#1a1a1a',
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

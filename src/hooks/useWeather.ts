@@ -116,7 +116,8 @@ export function useWeather(lat = 29.56, lon = 106.55): WeatherData {
         }
 
         const forecasts: DailyForecast[] = daily.time.map((dateStr: string, i: number) => {
-          const code = daily.weather_code[i]
+          // 第一天的预报直接用当前天气数据，保证一致性
+          const code = i === 0 ? current.weather_code : daily.weather_code[i]
           const info = getWeatherInfo(code)
           const { weekday, date } = formatDate(dateStr)
           return {
