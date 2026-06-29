@@ -5,8 +5,8 @@ let mainWindow: BrowserWindow | null = null
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 400,
-    height: 700,
+    width: 100,
+    height: 120,
     resizable: false,
     frame: false,
     transparent: true,
@@ -52,6 +52,22 @@ ipcMain.on('window-minimize', () => {
 
 ipcMain.on('window-close', () => {
   mainWindow?.close()
+})
+
+// 收起为小图标：窗口缩小到只包住图标，且点击穿透
+ipcMain.on('window-collapse', () => {
+  if (!mainWindow) return
+  const [x, y] = mainWindow.getPosition()
+  // 缩小到 100x120，保持左上角位置不变
+  mainWindow.setBounds({ x, y, width: 100, height: 120 })
+  mainWindow.setIgnoreMouseEvents(false)
+})
+
+// 展开：窗口恢复到 400x700
+ipcMain.on('window-expand', () => {
+  if (!mainWindow) return
+  const [x, y] = mainWindow.getPosition()
+  mainWindow.setBounds({ x, y, width: 400, height: 700 })
 })
 
 ipcMain.handle('select-ics-file', async () => {

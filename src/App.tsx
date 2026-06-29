@@ -19,6 +19,14 @@ const App: React.FC = () => {
 
   const handleCollapse = () => {
     setExpanded(false)
+    // 收起：窗口缩小到只包住小图标
+    window.electronAPI?.collapse()
+  }
+
+  const handleExpand = () => {
+    setExpanded(true)
+    // 展开：窗口恢复到完整大小
+    window.electronAPI?.expand()
   }
 
   // 加载中
@@ -61,15 +69,15 @@ const App: React.FC = () => {
             gap: 2,
             padding: '10px 14px',
             borderRadius: 16,
-            background: 'rgba(13, 27, 42, 0.75)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(13, 27, 42, 0.1)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.04)',
             transition: 'all 0.3s ease',
             cursor: 'pointer',
           }}
-          onMouseEnter={() => setExpanded(true)}
+          onMouseEnter={handleExpand}
           title="悬停查看详情"
         >
           <WeatherIcon name={weather.current.weatherIcon} size={56} />
@@ -83,8 +91,8 @@ const App: React.FC = () => {
             {weather.current.temperature}°
           </div>
           <div style={{
-            fontSize: 9,
-            color: 'rgba(255,255,255,0.4)',
+            fontSize: 14,
+            color: 'rgba(255,255,255,0.55)',
             letterSpacing: 2,
           }}>
             {weather.current.weatherLabel}
