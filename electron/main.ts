@@ -7,10 +7,11 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 400,
     height: 700,
-    resizable: true,
+    resizable: false,
     frame: false,
     transparent: true,
-    alwaysOnTop: false,
+    alwaysOnTop: true,
+    skipTaskbar: false,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -21,7 +22,6 @@ function createWindow() {
 
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
-    mainWindow.webContents.openDevTools({ mode: 'detach' })
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
