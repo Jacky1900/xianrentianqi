@@ -22,219 +22,308 @@ interface Props {
   size?: number
 }
 
-// 配色方案 - 诺基亚 Lumia 天气风格
-const COLORS = {
-  sun: '#FFC107',       // 金黄色太阳
-  sunGlow: '#FFD54F',   // 太阳光晕
-  moon: '#E0E0E0',      // 月亮
-  cloud: '#FFFFFF',     // 云朵
-  cloudShadow: '#90A4AE', // 云朵阴影
-  rain: '#4FC3F7',      // 雨滴
-  snow: '#FFFFFF',      // 雪花
-  lightning: '#FFEB3B', // 闪电
-  fog: '#B0BEC5',       // 雾
-  hail: '#B3E5FC',      // 冰雹
-  stroke: '#FFFFFF',    // 默认描边
-}
-
+// 立体感天气图标 - 使用径向渐变 + 高光 + 阴影
 const WeatherIcon: React.FC<Props> = ({ name, size = 48 }) => {
-  const c = COLORS
-  const sw = 1.5
+  // 唯一 ID 防止多个图标渐变冲突
+  const uid = `${name}-${size}-${Math.random().toString(36).slice(2, 7)}`
+
+  const defs = (
+    <>
+      {/* 太阳渐变 - 金黄到橙 */}
+      <radialGradient id={`sun-${uid}`} cx="35%" cy="35%">
+        <stop offset="0%" stopColor="#FFF59D" />
+        <stop offset="40%" stopColor="#FFD54F" />
+        <stop offset="100%" stopColor="#FF8F00" />
+      </radialGradient>
+
+      {/* 云朵渐变 - 顶部亮白到底部灰 */}
+      <linearGradient id={`cloud-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#FFFFFF" />
+        <stop offset="60%" stopColor="#ECEFF1" />
+        <stop offset="100%" stopColor="#90A4AE" />
+      </linearGradient>
+
+      {/* 云朵阴影渐变 */}
+      <linearGradient id={`cloud-dark-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#CFD8DC" />
+        <stop offset="100%" stopColor="#546E7A" />
+      </linearGradient>
+
+      {/* 雨滴渐变 */}
+      <linearGradient id={`rain-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#81D4FA" />
+        <stop offset="100%" stopColor="#0288D1" />
+      </linearGradient>
+
+      {/* 闪电渐变 */}
+      <linearGradient id={`lightning-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#FFF9C4" />
+        <stop offset="50%" stopColor="#FFEB3B" />
+        <stop offset="100%" stopColor="#FF8F00" />
+      </linearGradient>
+
+      {/* 雪花渐变 */}
+      <linearGradient id={`snow-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#FFFFFF" />
+        <stop offset="100%" stopColor="#B3E5FC" />
+      </linearGradient>
+
+      {/* 雾渐变 */}
+      <linearGradient id={`fog-${uid}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#ECEFF1" />
+        <stop offset="100%" stopColor="#78909C" />
+      </linearGradient>
+
+      {/* 阴影滤镜 */}
+      <filter id={`shadow-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="2" stdDeviation="1.5" floodColor="#000000" floodOpacity="0.3" />
+      </filter>
+
+      {/* 高光滤镜 */}
+      <filter id={`glow-${uid}`} x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#FFD54F" floodOpacity="0.6" />
+      </filter>
+    </>
+  )
 
   const icons: Record<WeatherIconName, React.ReactNode> = {
     clear: (
-      // 太阳：金色圆 + 光晕射线
       <g>
-        <g stroke={c.sun} strokeWidth={sw + 0.5} strokeLinecap="round">
-          <line x1="32" y1="4" x2="32" y2="12" />
-          <line x1="32" y1="52" x2="32" y2="60" />
-          <line x1="4" y1="32" x2="12" y2="32" />
-          <line x1="52" y1="32" x2="60" y2="32" />
-          <line x1="12" y1="12" x2="17" y2="17" />
-          <line x1="47" y1="47" x2="52" y2="52" />
-          <line x1="52" y1="12" x2="47" y2="17" />
-          <line x1="17" y1="47" x2="12" y2="52" />
+        {/* 光晕射线 */}
+        <g stroke="#FFC107" strokeWidth="2.5" strokeLinecap="round" opacity="0.85">
+          <line x1="32" y1="3" x2="32" y2="11" />
+          <line x1="32" y1="53" x2="32" y2="61" />
+          <line x1="3" y1="32" x2="11" y2="32" />
+          <line x1="53" y1="32" x2="61" y2="32" />
+          <line x1="11" y1="11" x2="16" y2="16" />
+          <line x1="48" y1="48" x2="53" y2="53" />
+          <line x1="53" y1="11" x2="48" y2="16" />
+          <line x1="16" y1="48" x2="11" y2="53" />
         </g>
-        <circle cx="32" cy="32" r="13" fill={c.sun} />
-        <circle cx="32" cy="32" r="13" fill="none" stroke={c.sunGlow} strokeWidth="0.8" opacity="0.6" />
+        {/* 太阳球体 - 立体渐变 */}
+        <circle cx="32" cy="32" r="13" fill={`url(#sun-${uid})`} filter={`url(#shadow-${uid})`} />
+        {/* 高光 */}
+        <ellipse cx="28" cy="28" rx="5" ry="3" fill="#FFFFFF" opacity="0.4" />
       </g>
     ),
     'partly-cloudy': (
-      // 金色太阳 + 白色云
       <g>
-        <g stroke={c.sun} strokeWidth={sw} strokeLinecap="round" opacity="0.9">
-          <line x1="22" y1="6" x2="22" y2="10" />
-          <line x1="6" y1="22" x2="10" y2="22" />
-          <line x1="10.5" y1="10.5" x2="13.5" y2="13.5" />
-          <line x1="33.5" y1="10.5" x2="30.5" y2="13.5" />
+        {/* 射线 */}
+        <g stroke="#FFC107" strokeWidth="2" strokeLinecap="round" opacity="0.7">
+          <line x1="22" y1="4" x2="22" y2="9" />
+          <line x1="4" y1="22" x2="9" y2="22" />
+          <line x1="9" y1="9" x2="12" y2="12" />
+          <line x1="33" y1="9" x2="30" y2="12" />
         </g>
-        <circle cx="22" cy="22" r="8" fill={c.sun} />
+        {/* 太阳 */}
+        <circle cx="22" cy="22" r="8" fill={`url(#sun-${uid})`} filter={`url(#shadow-${uid})`} />
+        <ellipse cx="20" cy="20" rx="3" ry="2" fill="#FFFFFF" opacity="0.4" />
+        {/* 立体云朵 */}
         <path
-          d="M18 42 Q18 34 26 34 Q28 28 36 30 Q44 28 46 36 Q52 36 52 44 Q52 50 46 50 L22 50 Q16 50 18 42 Z"
-          fill={c.cloud}
+          d="M16 44 Q16 35 25 35 Q27 28 36 30 Q45 28 47 37 Q54 37 54 46 Q54 52 47 52 L21 52 Q14 52 16 44 Z"
+          fill={`url(#cloud-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
+        {/* 云朵高光 */}
         <path
-          d="M18 42 Q18 34 26 34 Q28 28 36 30 Q44 28 46 36 Q52 36 52 44 Q52 50 46 50 L22 50 Q16 50 18 42 Z"
-          fill={c.cloudShadow}
-          opacity="0.2"
+          d="M20 38 Q22 36 26 36 Q28 32 34 33"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.5"
+          opacity="0.6"
+          strokeLinecap="round"
         />
       </g>
     ),
     cloudy: (
-      // 两朵白云
       <g>
+        {/* 后层云 */}
         <path
-          d="M12 36 Q12 28 20 28 Q22 22 30 24 Q38 22 40 30 Q46 30 46 38 Q46 44 40 44 L16 44 Q10 44 12 36 Z"
-          fill={c.cloud}
-          opacity="0.5"
+          d="M10 36 Q10 27 19 27 Q21 20 30 22 Q39 20 41 29 Q48 29 48 38 Q48 45 41 45 L15 45 Q7 45 10 36 Z"
+          fill={`url(#cloud-dark-${uid})`}
+          opacity="0.6"
+          filter={`url(#shadow-${uid})`}
         />
+        {/* 前层云 */}
         <path
-          d="M18 44 Q18 36 26 36 Q28 30 36 32 Q44 30 46 38 Q52 38 52 46 Q52 52 46 52 L22 52 Q16 52 18 44 Z"
-          fill={c.cloud}
+          d="M18 44 Q18 35 27 35 Q29 28 38 30 Q47 28 49 37 Q56 37 56 46 Q56 53 49 53 L23 53 Q16 53 18 44 Z"
+          fill={`url(#cloud-${uid})`}
+          filter={`url(#shadow-${uid})`}
+        />
+        {/* 高光 */}
+        <path
+          d="M22 38 Q24 36 28 36 Q30 32 36 33"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.5"
+          opacity="0.7"
+          strokeLinecap="round"
         />
       </g>
     ),
     overcast: (
-      // 厚云
       <g>
+        {/* 厚云层 */}
         <path
-          d="M8 34 Q8 24 18 24 Q20 16 30 18 Q42 16 44 26 Q54 26 54 36 Q54 44 46 44 L12 44 Q4 44 8 34 Z"
-          fill={c.cloudShadow}
-          opacity="0.4"
+          d="M6 32 Q6 22 16 22 Q18 14 28 16 Q40 14 42 24 Q52 24 52 34 Q52 42 44 42 L10 42 Q2 42 6 32 Z"
+          fill={`url(#cloud-dark-${uid})`}
+          opacity="0.5"
+          filter={`url(#shadow-${uid})`}
         />
         <path
-          d="M14 42 Q14 32 24 32 Q26 24 36 26 Q48 24 50 34 Q60 34 60 44 Q60 52 52 52 L18 52 Q10 52 14 42 Z"
-          fill={c.cloud}
+          d="M14 40 Q14 30 24 30 Q26 22 36 24 Q48 22 50 32 Q60 32 60 42 Q60 50 52 50 L18 50 Q10 50 14 40 Z"
+          fill={`url(#cloud-${uid})`}
+          filter={`url(#shadow-${uid})`}
+        />
+        <path
+          d="M18 34 Q20 32 24 32 Q26 28 32 29"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.5"
+          opacity="0.5"
+          strokeLinecap="round"
         />
       </g>
     ),
     fog: (
-      // 云 + 雾线
       <g>
+        {/* 云 */}
         <path
-          d="M14 26 Q14 18 22 18 Q24 12 32 14 Q42 12 44 20 Q52 20 52 28 Q52 34 46 34 L18 34 Q12 34 14 26 Z"
-          fill={c.fog}
-          opacity="0.7"
+          d="M14 24 Q14 15 24 15 Q26 9 34 11 Q44 9 46 17 Q54 17 54 25 Q54 31 48 31 L18 31 Q12 31 14 24 Z"
+          fill={`url(#fog-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
-        <g stroke={c.fog} strokeWidth={sw} strokeLinecap="round" opacity="0.6">
-          <line x1="10" y1="42" x2="52" y2="42" />
-          <line x1="14" y1="48" x2="56" y2="48" />
-          <line x1="12" y1="54" x2="48" y2="54" />
+        {/* 雾线 */}
+        <g stroke="#B0BEC5" strokeWidth="2.5" strokeLinecap="round" opacity="0.7">
+          <line x1="8" y1="38" x2="54" y2="38" />
+          <line x1="12" y1="44" x2="58" y2="44" />
+          <line x1="10" y1="50" x2="50" y2="50" />
+          <line x1="14" y1="56" x2="48" y2="56" />
         </g>
       </g>
     ),
     drizzle: (
-      // 云 + 小雨点
       <g>
         <path
-          d="M14 26 Q14 16 24 16 Q26 10 34 12 Q44 10 46 18 Q54 18 54 26 Q54 32 48 32 L18 32 Q12 32 14 26 Z"
-          fill={c.cloud}
+          d="M14 24 Q14 14 24 14 Q26 8 34 10 Q44 8 46 16 Q54 16 54 24 Q54 30 48 30 L18 30 Q12 30 14 24 Z"
+          fill={`url(#cloud-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
-        <g fill={c.rain}>
-          <circle cx="22" cy="42" r="1.8" />
-          <circle cx="32" cy="46" r="1.8" />
-          <circle cx="42" cy="42" r="1.8" />
-          <circle cx="27" cy="52" r="1.8" />
-          <circle cx="37" cy="52" r="1.8" />
+        <path
+          d="M18 18 Q20 16 24 16 Q26 12 32 13"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.5"
+          opacity="0.6"
+          strokeLinecap="round"
+        />
+        {/* 雨滴 - 立体椭圆 */}
+        <g fill={`url(#rain-${uid})`} filter={`url(#shadow-${uid})`}>
+          <ellipse cx="22" cy="40" rx="1.8" ry="2.8" />
+          <ellipse cx="32" cy="44" rx="1.8" ry="2.8" />
+          <ellipse cx="42" cy="40" rx="1.8" ry="2.8" />
+          <ellipse cx="27" cy="50" rx="1.8" ry="2.8" />
+          <ellipse cx="37" cy="50" rx="1.8" ry="2.8" />
         </g>
       </g>
     ),
     rain: (
-      // 云 + 雨线
       <g>
         <path
-          d="M14 24 Q14 14 24 14 Q26 8 34 10 Q44 8 46 16 Q54 16 54 24 Q54 30 48 30 L18 30 Q12 30 14 24 Z"
-          fill={c.cloud}
+          d="M14 22 Q14 12 24 12 Q26 6 34 8 Q44 6 46 14 Q54 14 54 22 Q54 28 48 28 L18 28 Q12 28 14 22 Z"
+          fill={`url(#cloud-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
-        <g stroke={c.rain} strokeWidth={sw + 0.3} strokeLinecap="round">
-          <line x1="22" y1="36" x2="20" y2="46" />
-          <line x1="32" y1="36" x2="30" y2="46" />
-          <line x1="42" y1="36" x2="40" y2="46" />
-          <line x1="27" y1="48" x2="25" y2="56" />
-          <line x1="37" y1="48" x2="35" y2="56" />
+        <path
+          d="M18 16 Q20 14 24 14 Q26 10 32 11"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.5"
+          opacity="0.6"
+          strokeLinecap="round"
+        />
+        <g stroke={`url(#rain-${uid})`} strokeWidth="2.5" strokeLinecap="round" filter={`url(#shadow-${uid})`}>
+          <line x1="22" y1="34" x2="20" y2="44" />
+          <line x1="32" y1="34" x2="30" y2="44" />
+          <line x1="42" y1="34" x2="40" y2="44" />
+          <line x1="27" y1="46" x2="25" y2="54" />
+          <line x1="37" y1="46" x2="35" y2="54" />
         </g>
       </g>
     ),
     'heavy-rain': (
-      // 云 + 大量雨线
       <g>
         <path
-          d="M10 22 Q10 12 20 12 Q22 6 30 8 Q42 6 44 14 Q54 14 54 22 Q54 28 48 28 L14 28 Q8 28 10 22 Z"
-          fill={c.cloud}
+          d="M10 20 Q10 10 20 10 Q22 4 30 6 Q42 4 44 12 Q54 12 54 20 Q54 26 48 26 L14 26 Q8 26 10 20 Z"
+          fill={`url(#cloud-dark-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
-        <g stroke={c.rain} strokeWidth={sw + 0.5} strokeLinecap="round">
-          <line x1="18" y1="34" x2="15" y2="46" />
-          <line x1="26" y1="34" x2="23" y2="46" />
-          <line x1="34" y1="34" x2="31" y2="46" />
-          <line x1="42" y1="34" x2="39" y2="46" />
-          <line x1="50" y1="34" x2="47" y2="46" />
-          <line x1="22" y1="48" x2="19" y2="60" />
-          <line x1="30" y1="48" x2="27" y2="60" />
-          <line x1="38" y1="48" x2="35" y2="60" />
-          <line x1="46" y1="48" x2="43" y2="60" />
+        <path
+          d="M14 14 Q16 12 20 12 Q22 8 28 9"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.5"
+          opacity="0.5"
+          strokeLinecap="round"
+        />
+        <g stroke={`url(#rain-${uid})`} strokeWidth="3" strokeLinecap="round" filter={`url(#shadow-${uid})`}>
+          <line x1="18" y1="32" x2="15" y2="44" />
+          <line x1="26" y1="32" x2="23" y2="44" />
+          <line x1="34" y1="32" x2="31" y2="44" />
+          <line x1="42" y1="32" x2="39" y2="44" />
+          <line x1="50" y1="32" x2="47" y2="44" />
+          <line x1="22" y1="46" x2="19" y2="58" />
+          <line x1="30" y1="46" x2="27" y2="58" />
+          <line x1="38" y1="46" x2="35" y2="58" />
+          <line x1="46" y1="46" x2="43" y2="58" />
         </g>
       </g>
     ),
     'freezing-rain': (
-      // 云 + 雨线 + 冰晶
       <g>
         <path
-          d="M14 24 Q14 14 24 14 Q26 8 34 10 Q44 8 46 16 Q54 16 54 24 Q54 30 48 30 L18 30 Q12 30 14 24 Z"
-          fill={c.cloud}
+          d="M14 22 Q14 12 24 12 Q26 6 34 8 Q44 6 46 14 Q54 14 54 22 Q54 28 48 28 L18 28 Q12 28 14 22 Z"
+          fill={`url(#cloud-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
-        <g stroke={c.rain} strokeWidth={sw} strokeLinecap="round">
-          <line x1="22" y1="36" x2="20" y2="44" />
-          <line x1="42" y1="36" x2="40" y2="44" />
+        <g stroke={`url(#rain-${uid})`} strokeWidth="2.5" strokeLinecap="round">
+          <line x1="22" y1="34" x2="20" y2="42" />
+          <line x1="42" y1="34" x2="40" y2="42" />
         </g>
-        <g fill={c.hail}>
-          <path d="M32 46 L34 50 L32 54 L30 50 Z" />
-        </g>
-        <g stroke={c.snow} strokeWidth={sw} strokeLinecap="round">
-          <g transform="translate(32,50)">
-            <line x1="-3" y1="0" x2="3" y2="0" />
-            <line x1="0" y1="-3" x2="0" y2="3" />
-          </g>
+        {/* 冰晶 */}
+        <g fill={`url(#snow-${uid})`} filter={`url(#shadow-${uid})`}>
+          <path d="M32 44 L35 50 L32 56 L29 50 Z" />
         </g>
       </g>
     ),
     snow: (
-      // 云 + 雪花
       <g>
         <path
-          d="M14 24 Q14 14 24 14 Q26 8 34 10 Q44 8 46 16 Q54 16 54 24 Q54 30 48 30 L18 30 Q12 30 14 24 Z"
-          fill={c.cloud}
+          d="M14 22 Q14 12 24 12 Q26 6 34 8 Q44 6 46 14 Q54 14 54 22 Q54 28 48 28 L18 28 Q12 28 14 22 Z"
+          fill={`url(#cloud-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
-        <g stroke={c.snow} strokeWidth={sw + 0.2} strokeLinecap="round">
-          <g transform="translate(22,42)">
-            <line x1="-4" y1="0" x2="4" y2="0" />
-            <line x1="0" y1="-4" x2="0" y2="4" />
-            <line x1="-3" y1="-3" x2="3" y2="3" />
-            <line x1="-3" y1="3" x2="3" y2="-3" />
-          </g>
-          <g transform="translate(34,48)">
-            <line x1="-4" y1="0" x2="4" y2="0" />
-            <line x1="0" y1="-4" x2="0" y2="4" />
-            <line x1="-3" y1="-3" x2="3" y2="3" />
-            <line x1="-3" y1="3" x2="3" y2="-3" />
-          </g>
-          <g transform="translate(46,42)">
-            <line x1="-4" y1="0" x2="4" y2="0" />
-            <line x1="0" y1="-4" x2="0" y2="4" />
-            <line x1="-3" y1="-3" x2="3" y2="3" />
-            <line x1="-3" y1="3" x2="3" y2="-3" />
-          </g>
+        <g stroke={`url(#snow-${uid})`} strokeWidth="2" strokeLinecap="round" filter={`url(#shadow-${uid})`}>
+          {[[22, 38], [34, 44], [46, 38], [28, 52], [40, 52]].map(([x, y], i) => (
+            <g key={i} transform={`translate(${x},${y})`}>
+              <line x1="-4" y1="0" x2="4" y2="0" />
+              <line x1="0" y1="-4" x2="0" y2="4" />
+              <line x1="-3" y1="-3" x2="3" y2="3" />
+              <line x1="-3" y1="3" x2="3" y2="-3" />
+            </g>
+          ))}
         </g>
       </g>
     ),
     'heavy-snow': (
-      // 厚云 + 大量雪花
       <g>
         <path
-          d="M10 22 Q10 12 20 12 Q22 6 30 8 Q42 6 44 14 Q54 14 54 22 Q54 28 48 28 L14 28 Q8 28 10 22 Z"
-          fill={c.cloud}
+          d="M10 20 Q10 10 20 10 Q22 4 30 6 Q42 4 44 12 Q54 12 54 20 Q54 26 48 26 L14 26 Q8 26 10 20 Z"
+          fill={`url(#cloud-dark-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
-        <g stroke={c.snow} strokeWidth={sw + 0.3} strokeLinecap="round">
-          {[[20, 36], [32, 40], [44, 36], [26, 48], [38, 48], [32, 56]].map(([x, y], i) => (
+        <g stroke={`url(#snow-${uid})`} strokeWidth="2.2" strokeLinecap="round" filter={`url(#shadow-${uid})`}>
+          {[[18, 34], [30, 38], [42, 34], [24, 46], [36, 46], [48, 46], [30, 56]].map(([x, y], i) => (
             <g key={i} transform={`translate(${x},${y})`}>
               <line x1="-4" y1="0" x2="4" y2="0" />
               <line x1="0" y1="-4" x2="0" y2="4" />
@@ -246,20 +335,29 @@ const WeatherIcon: React.FC<Props> = ({ name, size = 48 }) => {
       </g>
     ),
     showers: (
-      // 金色太阳 + 白云 + 雨线
       <g>
-        <g stroke={c.sun} strokeWidth={sw} strokeLinecap="round" opacity="0.8">
-          <line x1="18" y1="4" x2="18" y2="8" />
-          <line x1="4" y1="18" x2="8" y2="18" />
-          <line x1="8" y1="8" x2="11" y2="11" />
+        <g stroke="#FFC107" strokeWidth="2" strokeLinecap="round" opacity="0.8">
+          <line x1="18" y1="3" x2="18" y2="8" />
+          <line x1="3" y1="18" x2="8" y2="18" />
+          <line x1="7" y1="7" x2="10" y2="10" />
           <line x1="28" y1="8" x2="25" y2="11" />
         </g>
-        <circle cx="18" cy="18" r="7" fill={c.sun} />
+        <circle cx="18" cy="18" r="7" fill={`url(#sun-${uid})`} filter={`url(#shadow-${uid})`} />
+        <ellipse cx="16" cy="16" rx="2.5" ry="1.5" fill="#FFFFFF" opacity="0.4" />
         <path
-          d="M16 32 Q16 24 24 24 Q26 18 34 20 Q44 18 46 26 Q54 26 54 34 Q54 40 48 40 L20 40 Q14 40 16 32 Z"
-          fill={c.cloud}
+          d="M16 32 Q16 23 25 23 Q27 16 36 18 Q45 16 47 25 Q54 25 54 34 Q54 40 47 40 L21 40 Q14 40 16 32 Z"
+          fill={`url(#cloud-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
-        <g stroke={c.rain} strokeWidth={sw} strokeLinecap="round">
+        <path
+          d="M20 26 Q22 24 26 24 Q28 20 34 21"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.5"
+          opacity="0.6"
+          strokeLinecap="round"
+        />
+        <g stroke={`url(#rain-${uid})`} strokeWidth="2.5" strokeLinecap="round" filter={`url(#shadow-${uid})`}>
           <line x1="24" y1="44" x2="22" y2="52" />
           <line x1="34" y1="44" x2="32" y2="52" />
           <line x1="44" y1="44" x2="42" y2="52" />
@@ -267,17 +365,17 @@ const WeatherIcon: React.FC<Props> = ({ name, size = 48 }) => {
       </g>
     ),
     sleet: (
-      // 云 + 雨 + 雪
       <g>
         <path
-          d="M14 24 Q14 14 24 14 Q26 8 34 10 Q44 8 46 16 Q54 16 54 24 Q54 30 48 30 L18 30 Q12 30 14 24 Z"
-          fill={c.cloud}
+          d="M14 22 Q14 12 24 12 Q26 6 34 8 Q44 6 46 14 Q54 14 54 22 Q54 28 48 28 L18 28 Q12 28 14 22 Z"
+          fill={`url(#cloud-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
-        <g stroke={c.rain} strokeWidth={sw} strokeLinecap="round">
-          <line x1="22" y1="36" x2="20" y2="44" />
-          <line x1="42" y1="36" x2="40" y2="44" />
+        <g stroke={`url(#rain-${uid})`} strokeWidth="2.5" strokeLinecap="round">
+          <line x1="22" y1="34" x2="20" y2="42" />
+          <line x1="42" y1="34" x2="40" y2="42" />
         </g>
-        <g stroke={c.snow} strokeWidth={sw} strokeLinecap="round">
+        <g stroke={`url(#snow-${uid})`} strokeWidth="2" strokeLinecap="round" filter={`url(#shadow-${uid})`}>
           <g transform="translate(32,48)">
             <line x1="-4" y1="0" x2="4" y2="0" />
             <line x1="0" y1="-4" x2="0" y2="4" />
@@ -288,39 +386,36 @@ const WeatherIcon: React.FC<Props> = ({ name, size = 48 }) => {
       </g>
     ),
     thunderstorm: (
-      // 云 + 黄色闪电
       <g>
         <path
-          d="M14 22 Q14 12 24 12 Q26 6 34 8 Q44 6 46 14 Q54 14 54 22 Q54 28 48 28 L18 28 Q12 28 14 22 Z"
-          fill={c.cloud}
+          d="M14 20 Q14 10 24 10 Q26 4 34 6 Q44 4 46 12 Q54 12 54 20 Q54 26 48 26 L18 26 Q12 26 14 20 Z"
+          fill={`url(#cloud-dark-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
+        {/* 闪电 - 渐变立体 */}
         <path
-          d="M30 32 L24 46 L31 46 L27 58 L40 42 L33 42 L37 32 Z"
-          fill={c.lightning}
-        />
-        <path
-          d="M30 32 L24 46 L31 46 L27 58 L40 42 L33 42 L37 32 Z"
-          fill="none"
-          stroke={c.lightning}
-          strokeWidth="0.5"
+          d="M30 30 L23 44 L30 44 L26 58 L40 40 L33 40 L37 30 Z"
+          fill={`url(#lightning-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
       </g>
     ),
     'thunderstorm-hail': (
-      // 云 + 闪电 + 冰雹
       <g>
         <path
-          d="M14 20 Q14 10 24 10 Q26 4 34 6 Q44 4 46 12 Q54 12 54 20 Q54 26 48 26 L18 26 Q12 26 14 20 Z"
-          fill={c.cloud}
+          d="M14 18 Q14 8 24 8 Q26 2 34 4 Q44 2 46 10 Q54 10 54 18 Q54 24 48 24 L18 24 Q12 24 14 18 Z"
+          fill={`url(#cloud-dark-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
         <path
-          d="M28 30 L22 42 L29 42 L25 52 L36 40 L31 40 L33 30 Z"
-          fill={c.lightning}
+          d="M28 28 L22 40 L29 40 L25 50 L36 38 L31 38 L33 28 Z"
+          fill={`url(#lightning-${uid})`}
+          filter={`url(#shadow-${uid})`}
         />
-        <g fill={c.hail}>
-          <circle cx="44" cy="38" r="1.8" />
-          <circle cx="48" cy="46" r="1.8" />
-          <circle cx="42" cy="50" r="1.8" />
+        <g fill={`url(#snow-${uid})`} filter={`url(#shadow-${uid})`}>
+          <circle cx="44" cy="36" r="2" />
+          <circle cx="48" cy="44" r="2" />
+          <circle cx="42" cy="48" r="2" />
         </g>
       </g>
     ),
@@ -334,6 +429,9 @@ const WeatherIcon: React.FC<Props> = ({ name, size = 48 }) => {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
+      <defs>
+        {defs}
+      </defs>
       {icons[name]}
     </svg>
   )

@@ -71,10 +71,7 @@ const App: React.FC = () => {
         overflowY: 'auto',
       }}>
         {weather.current && (
-          <>
-            <CurrentWeather data={weather.current} city={weather.city} />
-            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0 20px' }} />
-          </>
+          <CurrentWeather data={weather.current} city={weather.city} />
         )}
         {weather.daily.length > 0 && (
           <DailyForecast forecasts={weather.daily} />
