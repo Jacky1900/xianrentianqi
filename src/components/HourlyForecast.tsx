@@ -1,20 +1,20 @@
 import React from 'react'
-import type { DailyForecast as DailyForecastType } from '../hooks/useWeather'
+import type { HourlyForecast as HourlyForecastType } from '../hooks/useWeather'
 import WeatherIcon from './WeatherIcon'
 
 interface Props {
-  forecasts: DailyForecastType[]
+  forecasts: HourlyForecastType[]
 }
 
-const DailyForecast: React.FC<Props> = ({ forecasts }) => {
+const HourlyForecast: React.FC<Props> = ({ forecasts }) => {
   return (
-    <div style={{ padding: '4px 16px 0' }}>
+    <div style={{ padding: '0 16px 4px' }}>
       {/* 标题 */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 4px 12px',
+        padding: '0 4px 10px',
       }}>
         <span style={{
           fontSize: 11,
@@ -22,14 +22,14 @@ const DailyForecast: React.FC<Props> = ({ forecasts }) => {
           letterSpacing: 6,
           fontWeight: 300,
         }}>
-          未来七天
+          逐时预报
         </span>
         <span style={{
           fontSize: 9,
           color: 'rgba(255,255,255,0.25)',
           letterSpacing: 1,
         }}>
-          当日综合
+          未来12小时
         </span>
       </div>
 
@@ -37,75 +37,64 @@ const DailyForecast: React.FC<Props> = ({ forecasts }) => {
       <div style={{
         background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
         borderRadius: 16,
-        padding: '14px 8px',
+        padding: '12px 4px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
         border: '1px solid rgba(255,255,255,0.06)',
       }}>
-        {/* 横排布局 */}
-        <div style={{ display: 'flex' }}>
-          {forecasts.map((day, i) => (
+        <div style={{
+          display: 'flex',
+          overflowX: 'auto',
+        }}>
+          {forecasts.map((hour, i) => (
             <div
               key={i}
               style={{
-                flex: '1 1 0',
+                flex: '1 0 auto',
+                width: 52,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 6,
+                gap: 4,
                 padding: '4px 2px',
               }}
             >
-              {/* 星期 */}
+              {/* 时间 */}
               <div style={{
-                fontSize: 12,
-                color: i === 0 ? '#fff' : 'rgba(255,255,255,0.6)',
-                fontWeight: i === 0 ? 400 : 300,
+                fontSize: 11,
+                color: i === 0 ? 'rgba(79,195,247,0.9)' : 'rgba(255,255,255,0.5)',
+                fontWeight: 300,
               }}>
-                {day.weekday}
-              </div>
-
-              {/* 日期 */}
-              <div style={{
-                fontSize: 10,
-                color: 'rgba(255,255,255,0.3)',
-              }}>
-                {day.date}
+                {i === 0 ? '现在' : hour.time}
               </div>
 
               {/* 天气图标 */}
               <div style={{ margin: '2px 0' }}>
-                <WeatherIcon name={day.weatherIcon} size={30} />
+                <WeatherIcon name={hour.weatherIcon} size={28} />
               </div>
 
-              {/* 天气描述 */}
+              {/* 温度 */}
               <div style={{
-                fontSize: 12,
-                color: 'rgba(255,255,255,0.6)',
-                textAlign: 'center',
-                lineHeight: 1.3,
-                minHeight: 22,
-                fontWeight: 300,
-              }}>
-                {day.weatherLabel}
-              </div>
-
-              {/* 高温 */}
-              <div style={{
-                fontSize: 14,
+                fontSize: 13,
                 color: '#fff',
                 fontWeight: 300,
-                marginTop: 2,
               }}>
-                {day.tempMax}°
+                {hour.tempAvg}°
               </div>
 
-              {/* 低温 */}
+              {/* 体感 */}
               <div style={{
-                fontSize: 12,
-                color: 'rgba(255,255,255,0.35)',
-                fontWeight: 300,
+                fontSize: 9,
+                color: 'rgba(255,255,255,0.3)',
               }}>
-                {day.tempMin}°
+                {hour.apparentTemp}°
+              </div>
+
+              {/* 风速 */}
+              <div style={{
+                fontSize: 9,
+                color: 'rgba(255,255,255,0.25)',
+              }}>
+                {hour.windSpeed}
               </div>
             </div>
           ))}
@@ -115,4 +104,4 @@ const DailyForecast: React.FC<Props> = ({ forecasts }) => {
   )
 }
 
-export default DailyForecast
+export default HourlyForecast

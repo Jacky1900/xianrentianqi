@@ -19,15 +19,32 @@ const CurrentWeather: React.FC<Props> = ({ data, city }) => {
         boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
         border: '1px solid rgba(255,255,255,0.06)',
       }}>
-        {/* 城市名 */}
+        {/* 城市名 + 实时标识 */}
         <div style={{
-          fontSize: 13,
-          letterSpacing: 6,
-          color: 'rgba(255,255,255,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
           marginBottom: 14,
-          fontWeight: 300,
         }}>
-          {city}
+          <span style={{
+            fontSize: 13,
+            letterSpacing: 6,
+            color: 'rgba(255,255,255,0.5)',
+            fontWeight: 300,
+          }}>
+            {city}
+          </span>
+          <span style={{
+            fontSize: 9,
+            color: 'rgba(79,195,247,0.7)',
+            border: '1px solid rgba(79,195,247,0.3)',
+            padding: '1px 5px',
+            borderRadius: 3,
+            letterSpacing: 1,
+          }}>
+            实时
+          </span>
         </div>
 
         {/* 天气图标 */}

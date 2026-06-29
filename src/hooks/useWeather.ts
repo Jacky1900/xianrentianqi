@@ -43,6 +43,16 @@ export interface CurrentWeather {
   weatherIcon: WeatherIconName
 }
 
+export interface HourlyForecast {
+  time: string      // "14:00"
+  tempMax: number
+  tempMin: number
+  tempAvg: number   // 平均温度
+  apparentTemp: number  // 体感温度
+  windSpeed: number     // 风速
+  weatherIcon: WeatherIconName
+}
+
 export interface DailyForecast {
   date: string
   weekday: string
@@ -55,6 +65,7 @@ export interface DailyForecast {
 
 export interface WeatherData {
   current: CurrentWeather | null
+  hourly: HourlyForecast[]
   daily: DailyForecast[]
   loading: boolean
   error: string | null
@@ -84,9 +95,17 @@ function formatDate(dateStr: string): { weekday: string; date: string } {
   return { weekday, date: `${m}/${d}` }
 }
 
+// 从 ISO 时间字符串提取小时，返回 "14:00" 格式
+function formatHour(isoStr: string): string {
+  const date = new Date(isoStr)
+  const h = date.getHours()
+  return `${h.toString().padStart(2, '0')}:00`
+}
+
 export function useWeather(lat = 29.56, lon = 106.55): WeatherData {
   const [data, setData] = useState<WeatherData>({
     current: null,
+    hourly: [],
     daily: [],
     loading: true,
     error: null,
@@ -96,12 +115,13 @@ export function useWeather(lat = 29.56, lon = 106.55): WeatherData {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia/Shanghai&forecast_days=7`
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&hourly=temperature_2m,apparent_temperature,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia/Shanghai&forecast_days=2`
         const res = await fetch(url)
         if (!res.ok) throw new Error('天气数据请求失败')
 
         const json = await res.json()
         const current = json.current
+        const hourly = json.hourly
         const daily = json.daily
 
         const currentInfo = getWeatherInfo(current.weather_code)
@@ -115,9 +135,33 @@ export function useWeather(lat = 29.56, lon = 106.55): WeatherData {
           weatherIcon: currentInfo.icon,
         }
 
+        // 从当前时间开始，取未来 12 个整点
+        const now = new Date(current.time)
+        now.setMinutes(0, 0, 0) // 向下取整到整点
+        const startTimeIdx = hourly.time.findIndex((t: string) => {
+          const d = new Date(t)
+          return d.getTime() >= now.getTime()
+        })
+
+        const startIdx = startTimeIdx >= 0 ? startTimeIdx : 0
+        const hourlyForecasts: HourlyForecast[] = []
+        for (let i = startIdx; i < startIdx + 12 && i < hourly.time.length; i++) {
+          const code = hourly.weather_code[i]
+          const info = getWeatherInfo(code)
+          hourlyForecasts.push({
+            time: formatHour(hourly.time[i]),
+            tempAvg: Math.round(hourly.temperature_2m[i]),
+            tempMax: Math.round(hourly.temperature_2m[i]),
+            tempMin: Math.round(hourly.temperature_2m[i]),
+            apparentTemp: Math.round(hourly.apparent_temperature[i]),
+            windSpeed: Math.round(hourly.wind_speed_10m[i]),
+            weatherIcon: info.icon,
+          })
+        }
+
         const forecasts: DailyForecast[] = daily.time.map((dateStr: string, i: number) => {
-          // 第一天的预报直接用当前天气数据，保证一致性
-          const code = i === 0 ? current.weather_code : daily.weather_code[i]
+          // 使用 daily 的当天综合天气代码（不是瞬时值）
+          const code = daily.weather_code[i]
           const info = getWeatherInfo(code)
           const { weekday, date } = formatDate(dateStr)
           return {
@@ -133,6 +177,7 @@ export function useWeather(lat = 29.56, lon = 106.55): WeatherData {
 
         setData({
           current: currentWeather,
+          hourly: hourlyForecasts,
           daily: forecasts,
           loading: false,
           error: null,
@@ -145,7 +190,7 @@ export function useWeather(lat = 29.56, lon = 106.55): WeatherData {
     }
 
     fetchWeather()
-    const interval = setInterval(fetchWeather, 30 * 60 * 1000) // 每30分钟刷新
+    const interval = setInterval(fetchWeather, 15 * 60 * 1000) // 每15分钟刷新
     return () => clearInterval(interval)
   }, [lat, lon])
 

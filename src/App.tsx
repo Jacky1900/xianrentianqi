@@ -1,6 +1,7 @@
 import React from 'react'
 import TitleBar from './components/TitleBar'
 import CurrentWeather from './components/CurrentWeather'
+import HourlyForecast from './components/HourlyForecast'
 import DailyForecast from './components/DailyForecast'
 import WeatherIcon from './components/WeatherIcon'
 import { useWeather } from './hooks/useWeather'
@@ -76,9 +77,13 @@ const App: React.FC = () => {
       <div style={{
         flex: 1,
         overflowY: 'auto',
+        paddingBottom: 12,
       }}>
         {weather.current && (
           <CurrentWeather data={weather.current} city={weather.city} />
+        )}
+        {weather.hourly.length > 0 && (
+          <HourlyForecast forecasts={weather.hourly} />
         )}
         {weather.daily.length > 0 && (
           <DailyForecast forecasts={weather.daily} />
