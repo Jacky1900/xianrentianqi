@@ -97,6 +97,18 @@ const App: React.FC = () => {
                 <line x1="3" y1="21" x2="10" y2="14" />
               </svg>
             </button>
+            {/* 刷新按钮 */}
+            <button
+              className="mini-icon-btn"
+              onClick={() => weather.refresh()}
+              title="刷新"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+            </button>
             {/* 最小化按钮 */}
             <button
               className="mini-icon-btn"
@@ -154,6 +166,7 @@ const App: React.FC = () => {
         onMinimize={handleMinimize}
         onClose={handleClose}
         onCollapse={handleCollapse}
+        onRefresh={() => weather.refresh()}
       />
 
       <div style={{
@@ -170,6 +183,17 @@ const App: React.FC = () => {
         {weather.daily.length > 0 && (
           <DailyForecast forecasts={weather.daily} />
         )}
+      </div>
+
+      {/* 右下角标识 */}
+      <div style={{
+        textAlign: 'right',
+        padding: '0 12px 4px',
+        fontSize: 9,
+        opacity: 0.2,
+        letterSpacing: 1,
+      }}>
+        闲人天气
       </div>
     </div>
   )

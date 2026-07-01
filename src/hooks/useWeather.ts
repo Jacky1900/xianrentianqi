@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import type { WeatherIconName } from '../components/WeatherIcon'
 
 // uapis.cn weather_code 映射到图标和中文标签
@@ -141,6 +141,7 @@ export interface WeatherData {
   loading: boolean
   error: string | null
   city: string
+  refresh: () => void
 }
 
 function getWeatherInfo(code: string) {
@@ -205,7 +206,10 @@ export function useWeather(initialCity = ''): WeatherData {
     loading: true,
     error: null,
     city: initialCity || '正在定位…',
+    refresh: () => {},
   })
+
+  const fetchWeatherRef = useRef<() => void>(() => {})
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -285,10 +289,15 @@ export function useWeather(initialCity = ''): WeatherData {
       }
     }
 
+    fetchWeatherRef.current = fetchWeather
     fetchWeather()
     const interval = setInterval(fetchWeather, 15 * 60 * 1000) // 每15分钟刷新
     return () => clearInterval(interval)
   }, [initialCity])
 
-  return data
+  const refresh = useCallback(() => {
+    fetchWeatherRef.current()
+  }, [])
+
+  return { ...data, refresh }
 }

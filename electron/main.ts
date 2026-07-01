@@ -80,6 +80,10 @@ ipcMain.on('window-expand', () => {
   // 小图标当前左上角位置
   const [iconX, iconY] = mainWindow.getPosition()
 
+  // 展开前保存小图标位置，以便收起时恢复到此位置
+  collapsedX = iconX
+  collapsedY = iconY
+
   // 获取小图标所在显示器的工作区（排除任务栏）
   const display = screen.getDisplayMatching({ x: iconX, y: iconY, width: COLLAPSE_W, height: COLLAPSE_H })
   const workArea = display.workArea // { x, y, width, height }

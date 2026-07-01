@@ -180,9 +180,9 @@ const HourlyForecast: React.FC<Props> = ({ forecasts }) => {
           onMouseDown={handleMouseDown}
           style={{
             marginTop: 8,
-            height: 4,
+            height: 8,
             background: 'rgba(255,255,255,0.1)',
-            borderRadius: 2,
+            borderRadius: 4,
             cursor: isDragging ? 'grabbing' : 'grab',
             position: 'relative',
             userSelect: 'none',
@@ -195,7 +195,7 @@ const HourlyForecast: React.FC<Props> = ({ forecasts }) => {
             width: `${thumbWidth}%`,
             height: '100%',
             background: 'rgba(255,255,255,0.4)',
-            borderRadius: 2,
+            borderRadius: 4,
             transition: isDragging ? 'none' : 'left 0.05s',
           }} />
         </div>
