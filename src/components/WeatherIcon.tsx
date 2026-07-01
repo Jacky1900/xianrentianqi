@@ -217,13 +217,17 @@ const WeatherIcon: React.FC<Props> = ({ name, size = 48 }) => {
           opacity="0.6"
           strokeLinecap="round"
         />
-        {/* 水滴形状 */}
+        {/* 小雨：3个圆润水滴 */}
         <g fill={`url(#rain-${uid})`} filter={`url(#shadow-${uid})`}>
-          <path d="M22 38 C20 42, 19 46, 22 47 C25 46, 24 42, 22 38 Z" />
-          <path d="M32 40 C30 44, 29 48, 32 49 C35 48, 34 44, 32 40 Z" />
-          <path d="M42 38 C40 42, 39 46, 42 47 C45 46, 44 42, 42 38 Z" />
-          <path d="M27 50 C25 54, 24 58, 27 59 C30 58, 29 54, 27 50 Z" />
-          <path d="M37 50 C35 54, 34 58, 37 59 C40 58, 39 54, 37 50 Z" />
+          <path d="M24 36 Q20.5 41 24 44 Q27.5 41 24 36 Z" />
+          <path d="M34 38 Q30.5 43 34 46 Q37.5 43 34 38 Z" />
+          <path d="M44 36 Q40.5 41 44 44 Q47.5 41 44 36 Z" />
+        </g>
+        {/* 雨滴高光 */}
+        <g fill="#FFFFFF" opacity="0.35">
+          <ellipse cx="22.5" cy="40" rx="1.5" ry="1" />
+          <ellipse cx="32.5" cy="42" rx="1.5" ry="1" />
+          <ellipse cx="42.5" cy="40" rx="1.5" ry="1" />
         </g>
       </g>
     ),
@@ -242,13 +246,21 @@ const WeatherIcon: React.FC<Props> = ({ name, size = 48 }) => {
           opacity="0.6"
           strokeLinecap="round"
         />
-        {/* 水滴形状 */}
+        {/* 中雨：5个圆润水滴 */}
         <g fill={`url(#rain-${uid})`} filter={`url(#shadow-${uid})`}>
-          <path d="M22 32 C19 38, 18 44, 22 46 C26 44, 25 38, 22 32 Z" />
-          <path d="M32 34 C29 40, 28 46, 32 48 C36 46, 35 40, 32 34 Z" />
-          <path d="M42 32 C39 38, 38 44, 42 46 C46 44, 45 38, 42 32 Z" />
-          <path d="M27 48 C24 54, 23 60, 27 62 C31 60, 30 54, 27 48 Z" />
-          <path d="M37 48 C34 54, 33 60, 37 62 C41 60, 40 54, 37 48 Z" />
+          <path d="M22 34 Q18.5 39 22 42 Q25.5 39 22 34 Z" />
+          <path d="M32 34 Q28.5 39 32 42 Q35.5 39 32 34 Z" />
+          <path d="M42 34 Q38.5 39 42 42 Q45.5 39 42 34 Z" />
+          <path d="M27 46 Q23.5 51 27 54 Q30.5 51 27 46 Z" />
+          <path d="M37 46 Q33.5 51 37 54 Q40.5 51 37 46 Z" />
+        </g>
+        {/* 雨滴高光 */}
+        <g fill="#FFFFFF" opacity="0.35">
+          <ellipse cx="20.5" cy="38" rx="1.5" ry="1" />
+          <ellipse cx="30.5" cy="38" rx="1.5" ry="1" />
+          <ellipse cx="40.5" cy="38" rx="1.5" ry="1" />
+          <ellipse cx="25.5" cy="50" rx="1.5" ry="1" />
+          <ellipse cx="35.5" cy="50" rx="1.5" ry="1" />
         </g>
       </g>
     ),
@@ -267,15 +279,25 @@ const WeatherIcon: React.FC<Props> = ({ name, size = 48 }) => {
           opacity="0.5"
           strokeLinecap="round"
         />
-        {/* 大量水滴 */}
+        {/* 大雨：7个圆润水滴 */}
         <g fill={`url(#rain-${uid})`} filter={`url(#shadow-${uid})`}>
-          <path d="M18 30 C15 36, 14 42, 18 44 C22 42, 21 36, 18 30 Z" />
-          <path d="M28 32 C25 38, 24 44, 28 46 C32 44, 31 38, 28 32 Z" />
-          <path d="M38 32 C35 38, 34 44, 38 46 C42 44, 41 38, 38 32 Z" />
-          <path d="M48 30 C45 36, 44 42, 48 44 C52 42, 51 36, 48 30 Z" />
-          <path d="M23 46 C20 52, 19 58, 23 60 C27 58, 26 52, 23 46 Z" />
-          <path d="M33 46 C30 52, 29 58, 33 60 C37 58, 36 52, 33 46 Z" />
-          <path d="M43 46 C40 52, 39 58, 43 60 C47 58, 46 52, 43 46 Z" />
+          <path d="M18 32 Q14.5 37 18 40 Q21.5 37 18 32 Z" />
+          <path d="M28 32 Q24.5 37 28 40 Q31.5 37 28 32 Z" />
+          <path d="M38 32 Q34.5 37 38 40 Q41.5 37 38 32 Z" />
+          <path d="M48 32 Q44.5 37 48 40 Q51.5 37 48 32 Z" />
+          <path d="M23 44 Q19.5 49 23 52 Q26.5 49 23 44 Z" />
+          <path d="M33 44 Q29.5 49 33 52 Q36.5 49 33 44 Z" />
+          <path d="M43 44 Q39.5 49 43 52 Q46.5 49 43 44 Z" />
+        </g>
+        {/* 雨滴高光 */}
+        <g fill="#FFFFFF" opacity="0.3">
+          <ellipse cx="16.5" cy="36" rx="1.5" ry="1" />
+          <ellipse cx="26.5" cy="36" rx="1.5" ry="1" />
+          <ellipse cx="36.5" cy="36" rx="1.5" ry="1" />
+          <ellipse cx="46.5" cy="36" rx="1.5" ry="1" />
+          <ellipse cx="21.5" cy="48" rx="1.5" ry="1" />
+          <ellipse cx="31.5" cy="48" rx="1.5" ry="1" />
+          <ellipse cx="41.5" cy="48" rx="1.5" ry="1" />
         </g>
       </g>
     ),
@@ -357,11 +379,19 @@ const WeatherIcon: React.FC<Props> = ({ name, size = 48 }) => {
           opacity="0.6"
           strokeLinecap="round"
         />
-        {/* 水滴形状 */}
+        {/* 阵雨：4个圆润水滴 */}
         <g fill={`url(#rain-${uid})`} filter={`url(#shadow-${uid})`}>
-          <path d="M24 42 C22 46, 21 50, 24 52 C27 50, 26 46, 24 42 Z" />
-          <path d="M34 44 C32 48, 31 52, 34 54 C37 52, 36 48, 34 44 Z" />
-          <path d="M44 42 C42 46, 41 50, 44 52 C47 50, 46 46, 44 42 Z" />
+          <path d="M22 42 Q18.5 47 22 50 Q25.5 47 22 42 Z" />
+          <path d="M30 42 Q26.5 47 30 50 Q33.5 47 30 42 Z" />
+          <path d="M38 42 Q34.5 47 38 50 Q41.5 47 38 42 Z" />
+          <path d="M46 42 Q42.5 47 46 50 Q49.5 47 46 42 Z" />
+        </g>
+        {/* 雨滴高光 */}
+        <g fill="#FFFFFF" opacity="0.35">
+          <ellipse cx="20.5" cy="46" rx="1.5" ry="1" />
+          <ellipse cx="28.5" cy="46" rx="1.5" ry="1" />
+          <ellipse cx="36.5" cy="46" rx="1.5" ry="1" />
+          <ellipse cx="44.5" cy="46" rx="1.5" ry="1" />
         </g>
       </g>
     ),
@@ -372,10 +402,15 @@ const WeatherIcon: React.FC<Props> = ({ name, size = 48 }) => {
           fill={`url(#cloud-${uid})`}
           filter={`url(#shadow-${uid})`}
         />
-        {/* 水滴 */}
-        <g fill={`url(#rain-${uid})`}>
-          <path d="M22 32 C20 36, 19 40, 22 42 C25 40, 24 36, 22 32 Z" />
-          <path d="M42 32 C40 36, 39 40, 42 42 C45 40, 44 36, 42 32 Z" />
+        {/* 雨夹雪：2个圆润水滴 */}
+        <g fill={`url(#rain-${uid})`} filter={`url(#shadow-${uid})`}>
+          <path d="M22 34 Q18.5 39 22 42 Q25.5 39 22 34 Z" />
+          <path d="M42 34 Q38.5 39 42 42 Q45.5 39 42 34 Z" />
+        </g>
+        {/* 雨滴高光 */}
+        <g fill="#FFFFFF" opacity="0.35">
+          <ellipse cx="20.5" cy="38" rx="1.5" ry="1" />
+          <ellipse cx="40.5" cy="38" rx="1.5" ry="1" />
         </g>
         <g stroke={`url(#snow-${uid})`} strokeWidth="2" strokeLinecap="round" filter={`url(#shadow-${uid})`}>
           <g transform="translate(32,48)">

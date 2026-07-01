@@ -47,7 +47,6 @@ const App: React.FC = () => {
   }
 
   // === 收起状态：只显示小图标 ===
-  // 只在鼠标进入小图标区域时才展开
   if (!expanded && weather.current) {
     return (
       <div
@@ -59,7 +58,7 @@ const App: React.FC = () => {
           background: 'transparent',
         }}
       >
-        {/* 透明 3D 天气图标 - 可拖动 + 鼠标悬停展开 */}
+        {/* 透明 3D 天气图标 */}
         <div
           className="weather-widget-drag"
           style={{
@@ -67,19 +66,53 @@ const App: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             gap: 2,
-            padding: '10px 14px',
+            padding: '14px 14px 10px',
             borderRadius: 16,
             background: 'rgba(13, 27, 42, 0.1)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
             boxShadow: '0 4px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
             border: '1px solid rgba(255,255,255,0.04)',
-            transition: 'all 0.3s ease',
-            cursor: 'pointer',
           }}
-          onMouseEnter={handleExpand}
-          title="悬停查看详情"
         >
+          {/* 小图标顶部按钮栏 - 透明背景 */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 4,
+            width: '100%',
+            marginBottom: 2,
+          }}>
+            {/* 展开按钮 */}
+            <button
+              className="mini-icon-btn"
+              onClick={handleExpand}
+              title="展开详情"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9" />
+                <polyline points="9 21 3 21 3 15" />
+                <line x1="21" y1="3" x2="14" y2="10" />
+                <line x1="3" y1="21" x2="10" y2="14" />
+              </svg>
+            </button>
+            {/* 最小化按钮 */}
+            <button
+              className="mini-icon-btn"
+              onClick={handleMinimize}
+              title="最小化"
+            >
+              &#x2500;
+            </button>
+            {/* 关闭按钮 */}
+            <button
+              className="mini-icon-btn close"
+              onClick={handleClose}
+              title="关闭"
+            >
+              &#x2715;
+            </button>
+          </div>
           <WeatherIcon name={weather.current.weatherIcon} size={56} />
           <div style={{
             fontSize: 22,
