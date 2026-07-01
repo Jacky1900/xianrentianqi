@@ -8,13 +8,13 @@ interface Props {
 
 const DailyForecast: React.FC<Props> = ({ forecasts }) => {
   return (
-    <div style={{ padding: '4px 16px 0' }}>
+    <div style={{ padding: '2px 16px 0' }}>
       {/* 标题 */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 4px 12px',
+        padding: '0 4px 6px',
       }}>
         <span style={{
           fontSize: 11,
@@ -51,13 +51,13 @@ const DailyForecast: React.FC<Props> = ({ forecasts }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 6,
+                gap: 5,
                 padding: '4px 2px',
               }}
             >
               {/* 星期 */}
               <div style={{
-                fontSize: 12,
+                fontSize: 11,
                 color: i === 0 ? '#fff' : 'rgba(255,255,255,0.6)',
                 fontWeight: i === 0 ? 400 : 300,
               }}>
@@ -66,42 +66,44 @@ const DailyForecast: React.FC<Props> = ({ forecasts }) => {
 
               {/* 日期 */}
               <div style={{
-                fontSize: 10,
+                fontSize: 9,
                 color: 'rgba(255,255,255,0.3)',
               }}>
                 {day.date}
               </div>
 
               {/* 天气图标 */}
-              <div style={{ margin: '2px 0' }}>
-                <WeatherIcon name={day.weatherIcon} size={30} />
+              <div style={{ height: 26, display: 'flex', alignItems: 'center' }}>
+                <WeatherIcon name={day.weatherIcon} size={24} />
               </div>
 
               {/* 天气描述 */}
               <div style={{
-                fontSize: 12,
+                fontSize: 10,
                 color: 'rgba(255,255,255,0.6)',
                 textAlign: 'center',
-                lineHeight: 1.3,
-                minHeight: 22,
+                lineHeight: 1.2,
+                minHeight: 24,
                 fontWeight: 300,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}>
                 {day.weatherLabel}
               </div>
 
               {/* 高温 */}
               <div style={{
-                fontSize: 14,
+                fontSize: 13,
                 color: '#fff',
                 fontWeight: 300,
-                marginTop: 2,
               }}>
                 {day.tempMax}°
               </div>
 
               {/* 低温 */}
               <div style={{
-                fontSize: 12,
+                fontSize: 11,
                 color: 'rgba(255,255,255,0.35)',
                 fontWeight: 300,
               }}>
