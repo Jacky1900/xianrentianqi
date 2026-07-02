@@ -6,7 +6,7 @@ let mainWindow: BrowserWindow | null = null
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 100,
-    height: 120,
+    height: 158,
     resizable: false,
     frame: false,
     transparent: true,
@@ -64,8 +64,8 @@ ipcMain.on('window-collapse', () => {
   const [x, y] = mainWindow.getPosition()
   collapsedX = x
   collapsedY = y
-  // 缩小到 100x120，保持左上角位置不变
-  mainWindow.setBounds({ x, y, width: 100, height: 120 })
+  // 缩小到 100x158，保持左上角位置不变
+  mainWindow.setBounds({ x, y, width: 100, height: 158 })
 })
 
 // 展开：窗口恢复到 400x700，自动调整位置确保完全在屏幕内
@@ -75,7 +75,7 @@ ipcMain.on('window-expand', () => {
   const EXPAND_W = 400
   const EXPAND_H = 700
   const COLLAPSE_W = 100
-  const COLLAPSE_H = 120
+  const COLLAPSE_H = 158
 
   // 小图标当前左上角位置
   const [iconX, iconY] = mainWindow.getPosition()
@@ -115,7 +115,7 @@ ipcMain.on('window-expand', () => {
 // 收起回小图标：恢复到展开前的图标位置
 ipcMain.on('window-restore-icon', () => {
   if (!mainWindow) return
-  mainWindow.setBounds({ x: collapsedX, y: collapsedY, width: 100, height: 120 })
+  mainWindow.setBounds({ x: collapsedX, y: collapsedY, width: 100, height: 158 })
 })
 
 ipcMain.handle('select-ics-file', async () => {
