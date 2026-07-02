@@ -77,26 +77,30 @@ const App: React.FC = () => {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
           background: 'transparent',
         }}
       >
-        {/* 天气卡片 - 独立窗口外观 */}
+        {/* 整体外壳 - 上下都是圆角 */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 1,
-            padding: '10px 14px 8px',
             borderRadius: 16,
             background: 'rgba(13, 27, 42, 0.1)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.04)',
+            overflow: 'hidden',
           }}
         >
+          {/* 天气内容 */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 1,
+              padding: '10px 14px 8px',
+            }}
+          >
           {/* 小图标顶部按钮栏 - 透明背景 */}
           <div style={{
             display: 'flex',
@@ -165,45 +169,27 @@ const App: React.FC = () => {
             {weather.current.weatherLabel}
           </div>
         </div>
-
-        {/* 日历入口 - 独立卡片外观 */}
-        <button
-          onClick={handleOpenCalendar}
-          title="打开日历"
-          className="mini-icon-btn"
-          style={{
-            width: 72,
-            height: 28,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 2,
-            borderRadius: 10,
-            background: 'rgba(13, 27, 42, 0.1)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.04)',
-            color: 'rgba(255,255,255,0.5)',
-            fontSize: 11,
-            cursor: 'pointer',
-            padding: 0,
-            fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
-            fontWeight: 300,
-            letterSpacing: 1,
-            transition: 'color 0.2s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#fff' }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          日历
-        </button>
+          {/* 日历待办入口 - 同一外壳内，共享背景 */}
+          <div
+            onClick={handleOpenCalendar}
+            style={{
+              WebkitAppRegion: 'no-drag',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px 14px',
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: 12,
+              fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
+              fontWeight: 300,
+              letterSpacing: 2,
+              cursor: 'pointer',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+            }}
+          >
+            日历  待办
+          </div>
+        </div>
       </div>
     )
   }

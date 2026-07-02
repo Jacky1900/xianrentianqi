@@ -149,20 +149,26 @@ function getWeatherInfo(code: string) {
 }
 
 // 按天气文字（如"小雨"、"多云"）映射到图标
+// 注意：长关键词在前，通配关键词（"雨"、"雪"）在最后兜底
 const weatherTextMap: { keyword: string; icon: WeatherIconName }[] = [
   { keyword: '雷阵雨伴有冰雹', icon: 'thunderstorm-hail' },
   { keyword: '雷阵雨', icon: 'thunderstorm' },
   { keyword: '冻雨', icon: 'freezing-rain' },
   { keyword: '雨夹雪', icon: 'sleet' },
   { keyword: '暴雨', icon: 'heavy-rain' },
+  { keyword: '大暴雨', icon: 'heavy-rain' },
   { keyword: '大雨', icon: 'heavy-rain' },
   { keyword: '中雨', icon: 'rain' },
   { keyword: '阵雨', icon: 'showers' },
   { keyword: '小雨', icon: 'drizzle' },
+  { keyword: '暴雪', icon: 'heavy-snow' },
   { keyword: '大雪', icon: 'heavy-snow' },
   { keyword: '中雪', icon: 'snow' },
   { keyword: '阵雪', icon: 'snow' },
   { keyword: '小雪', icon: 'snow' },
+  // 通配兜底：API可能返回单个"雨"或"雪"字
+  { keyword: '雨', icon: 'rain' },
+  { keyword: '雪', icon: 'snow' },
   { keyword: '沙尘', icon: 'fog' },
   { keyword: '霾', icon: 'fog' },
   { keyword: '雾', icon: 'fog' },
@@ -231,8 +237,8 @@ export function useWeather(initialCity = ''): WeatherData {
 
         const json = await res.json()
 
-        // 解析当前天气
-        const weatherInfo = getWeatherInfo(json.weather_code)
+        // 解析当前天气：图标根据文字映射，与逐时/逐日预报逻辑一致
+        const weatherText = json.weather ?? '未知'
         const currentWeather: CurrentWeather = {
           temperature: json.temperature ?? 0,
           apparentTemperature: json.feels_like ?? json.apparent_temperature ?? json.temperature ?? 0,
@@ -240,8 +246,8 @@ export function useWeather(initialCity = ''): WeatherData {
           windSpeed: `${json.wind_direction ?? ''} ${json.wind_power ?? json.wind_force ?? ''}`.trim(),
           uvIndex: json.uv_index ?? json.uv ?? 0,
           weatherCode: Number(json.weather_code ?? 0),
-          weatherLabel: json.weather ?? weatherInfo.label,
-          weatherIcon: weatherInfo.icon,
+          weatherLabel: weatherText,
+          weatherIcon: getWeatherIconByText(weatherText),
         }
 
         // 解析7天预报（API 返回字段：temp_max, temp_min, weather_day, weather_night）
