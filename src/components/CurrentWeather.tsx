@@ -5,9 +5,10 @@ import WeatherIcon from './WeatherIcon'
 interface Props {
   data: CurrentWeatherType
   city: string
+  onChangeCity: () => void
 }
 
-const CurrentWeather: React.FC<Props> = ({ data, city }) => {
+const CurrentWeather: React.FC<Props> = ({ data, city, onChangeCity }) => {
   return (
     <div style={{ padding: '8px 16px 6px' }}>
       {/* 玻璃拟态卡片 */}
@@ -19,12 +20,12 @@ const CurrentWeather: React.FC<Props> = ({ data, city }) => {
         boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
         border: '1px solid rgba(255,255,255,0.06)',
       }}>
-        {/* 城市名 + 实时标识 */}
+        {/* 城市名 + 更改 + 实时标识 */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
+          gap: 6,
           marginBottom: 4,
         }}>
           <span style={{
@@ -34,6 +35,19 @@ const CurrentWeather: React.FC<Props> = ({ data, city }) => {
             fontWeight: 300,
           }}>
             {city}
+          </span>
+          <span
+            onClick={onChangeCity}
+            style={{
+              fontSize: 10,
+              color: 'rgba(79,195,247,0.7)',
+              cursor: 'pointer',
+              letterSpacing: 1,
+              fontWeight: 300,
+              WebkitAppRegion: 'no-drag',
+            }}
+          >
+            更改
           </span>
           <span style={{
             fontSize: 9,

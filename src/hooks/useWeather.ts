@@ -142,6 +142,7 @@ export interface WeatherData {
   error: string | null
   city: string
   refresh: () => void
+  changeCity: (city: string) => void
 }
 
 function getWeatherInfo(code: string) {
@@ -205,6 +206,7 @@ function formatDate(dateStr: string): { weekday: string; date: string } {
 
 
 export function useWeather(initialCity = ''): WeatherData {
+  const [cityParam, setCityParam] = useState(initialCity)
   const [data, setData] = useState<WeatherData>({
     current: null,
     daily: [],
@@ -213,13 +215,15 @@ export function useWeather(initialCity = ''): WeatherData {
     error: null,
     city: initialCity || '正在定位…',
     refresh: () => {},
+    changeCity: () => {},
   })
 
-  const fetchWeatherRef = useRef<() => void>(() => {})
+  const fetchWeatherRef = useRef<(silent?: boolean) => void>(() => {})
 
   useEffect(() => {
-    const fetchWeather = async () => {
+    const fetchWeather = async (silent = false) => {
       try {
+        if (!silent) setData((prev) => ({ ...prev, loading: true }))
         // 构建 API URL：免费、无需注册
         // 不传 city/adcode → 自动按 IP 定位
         const baseUrl = 'https://uapis.cn/api/v1/misc/weather'
@@ -229,7 +233,7 @@ export function useWeather(initialCity = ''): WeatherData {
           hourly: 'true',
           lang: 'zh',
         })
-        if (initialCity) params.set('city', initialCity)
+        if (cityParam) params.set('city', cityParam)
 
         const url = `${baseUrl}?${params.toString()}`
         const res = await fetch(url)
@@ -281,13 +285,16 @@ export function useWeather(initialCity = ''): WeatherData {
           }
         })
 
+        // 城市名显示逻辑：优先district（区级精确定位），其次city，最后fallback
+        const displayCity = json.district || json.city || cityParam || '未知'
+
         setData({
           current: currentWeather,
           daily: forecasts,
           hourly: hourlyData,
           loading: false,
           error: null,
-          city: json.city ?? initialCity ?? '未知',
+          city: displayCity,
         })
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : '未知错误'
@@ -297,13 +304,17 @@ export function useWeather(initialCity = ''): WeatherData {
 
     fetchWeatherRef.current = fetchWeather
     fetchWeather()
-    const interval = setInterval(fetchWeather, 15 * 60 * 1000) // 每15分钟刷新
+    const interval = setInterval(() => fetchWeather(true), 15 * 60 * 1000) // 每15分钟静默刷新
     return () => clearInterval(interval)
-  }, [initialCity])
+  }, [cityParam])
 
   const refresh = useCallback(() => {
-    fetchWeatherRef.current()
+    fetchWeatherRef.current(true)
   }, [])
 
-  return { ...data, refresh }
+  const changeCity = useCallback((city: string) => {
+    setCityParam(city)
+  }, [])
+
+  return { ...data, refresh, changeCity }
 }

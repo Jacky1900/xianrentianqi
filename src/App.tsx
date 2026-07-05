@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import TitleBar from './components/TitleBar'
 import CurrentWeather from './components/CurrentWeather'
 import HourlyForecast from './components/HourlyForecast'
@@ -6,11 +6,56 @@ import DailyForecast from './components/DailyForecast'
 import CalendarView from './components/CalendarView'
 import WeatherIcon from './components/WeatherIcon'
 import { useWeather } from './hooks/useWeather'
+import { useSchedules, Urgency } from './hooks/useSchedules'
+
+const URGENCY_COLORS: Record<Urgency, string> = {
+  urgent: 'rgba(255, 82, 82, 0.6)',
+  important: 'rgba(255, 213, 79, 0.5)',
+  normal: 'rgba(102, 187, 106, 0.4)',
+}
+
+function getTodayStr(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function getNowTimeStr(): string {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
 
 const App: React.FC = () => {
   const weather = useWeather()
+  const { getTopUrgencyByDate, getDueSchedules } = useSchedules()
   const [expanded, setExpanded] = useState(false)
   const [viewMode, setViewMode] = useState<'weather' | 'calendar'>('weather')
+  const [refreshing, setRefreshing] = useState(false)
+  const [showCityDialog, setShowCityDialog] = useState(false)
+  const [cityInput, setCityInput] = useState('')
+  const [isFlashing, setIsFlashing] = useState(false)
+  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set())
+
+  const handleRefresh = () => {
+    setRefreshing(true)
+    weather.refresh()
+    setTimeout(() => setRefreshing(false), 600)
+  }
+
+  const handleChangeCity = () => {
+    setCityInput('')
+    setShowCityDialog(true)
+  }
+
+  const handleConfirmCity = () => {
+    if (cityInput.trim()) {
+      weather.changeCity(cityInput.trim())
+    }
+    setShowCityDialog(false)
+  }
+
+  const handleCancelCity = () => {
+    setShowCityDialog(false)
+  }
 
   const handleMinimize = () => {
     window.electronAPI?.minimize()
@@ -34,10 +79,39 @@ const App: React.FC = () => {
   }
 
   const handleOpenCalendar = () => {
+    // 点击闪烁图标时，把当前到时间的日程标记为已确认
+    const today = getTodayStr()
+    const now = getNowTimeStr()
+    const due = getDueSchedules(today, now)
+    if (due.length > 0) {
+      setAcknowledgedIds((prev) => {
+        const next = new Set(prev)
+        due.forEach((s) => next.add(s.id))
+        return next
+      })
+    }
+    setIsFlashing(false)
     setExpanded(true)
     setViewMode('calendar')
     window.electronAPI?.expand()
   }
+
+  // 每30秒检测是否有新的已到时间日程，触发闪烁
+  useEffect(() => {
+    const checkDue = () => {
+      const today = getTodayStr()
+      const now = getNowTimeStr()
+      const due = getDueSchedules(today, now)
+      // 只有存在未确认的到期日程才闪烁
+      const hasNew = due.some((s) => !acknowledgedIds.has(s.id))
+      if (hasNew) {
+        setIsFlashing(true)
+      }
+    }
+    checkDue()
+    const timer = setInterval(checkDue, 30000)
+    return () => clearInterval(timer)
+  }, [getDueSchedules, acknowledgedIds])
 
   const handleBackToWeather = () => {
     setViewMode('weather')
@@ -85,7 +159,7 @@ const App: React.FC = () => {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
+            alignItems: 'stretch',
             borderRadius: 16,
             background: 'rgba(13, 27, 42, 0.1)',
             overflow: 'hidden',
@@ -125,10 +199,10 @@ const App: React.FC = () => {
             {/* 刷新按钮 */}
             <button
               className="mini-icon-btn"
-              onClick={() => weather.refresh()}
+              onClick={handleRefresh}
               title="刷新"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg className={refreshing ? 'spin-refresh' : ''} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="23 4 23 10 17 10" />
                 <polyline points="1 20 1 14 7 14" />
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
@@ -169,26 +243,54 @@ const App: React.FC = () => {
             {weather.current.weatherLabel}
           </div>
         </div>
-          {/* 日历待办入口 - 同一外壳内，共享背景 */}
-          <div
-            onClick={handleOpenCalendar}
-            style={{
-              WebkitAppRegion: 'no-drag',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '6px 14px',
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: 12,
-              fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
-              fontWeight: 300,
-              letterSpacing: 2,
-              cursor: 'pointer',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
-            }}
-          >
-            日历  待办
-          </div>
+          {/* 日历待办入口 - 根据紧急程度变色，到时间闪烁 */}
+          {(() => {
+            const today = getTodayStr()
+            const now = getNowTimeStr()
+            const dueSchedules = getDueSchedules(today, now)
+            // 只要有未确认的到期日程，才显示底色和闪烁
+            const unacknowledgedDue = dueSchedules.filter((s) => !acknowledgedIds.has(s.id))
+            const hasUnacknowledged = unacknowledgedDue.length > 0
+            // 找到最紧急的未确认到期日程来决定颜色
+            const topUnack = unacknowledgedDue.sort((a, b) => {
+              const order = { urgent: 0, important: 1, normal: 2 } as Record<Urgency, number>
+              return order[a.urgency] - order[b.urgency]
+            })[0]
+            const urgencyBg = hasUnacknowledged && topUnack ? URGENCY_COLORS[topUnack.urgency] : 'transparent'
+            const shouldFlash = isFlashing && hasUnacknowledged
+
+            // 闪烁时显示最紧急的日程内容，否则显示"日历  待办"
+            const displayText = shouldFlash && topUnack ? topUnack.title : '日历  待办'
+
+            return (
+              <div
+                onClick={handleOpenCalendar}
+                className={shouldFlash ? 'urgency-flash' : ''}
+                style={{
+                  WebkitAppRegion: 'no-drag',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px 14px',
+                  color: 'rgba(255,255,255,0.8)',
+                  fontSize: 12,
+                  fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
+                  fontWeight: 300,
+                  letterSpacing: 2,
+                  cursor: 'pointer',
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  background: urgencyBg,
+                  transition: 'background 0.3s',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%',
+                }}
+              >
+                {displayText}
+              </div>
+            )
+          })()}
         </div>
       </div>
     )
@@ -211,13 +313,15 @@ const App: React.FC = () => {
         background: 'linear-gradient(180deg, #0D1B2A 0%, #1B263B 50%, #243447 100%)',
         boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
         animation: 'expandIn 0.3s ease',
+        position: 'relative',
       }}
     >
       <TitleBar
         onMinimize={handleMinimize}
         onClose={handleClose}
         onCollapse={handleCollapse}
-        onRefresh={() => weather.refresh()}
+        onRefresh={handleRefresh}
+        refreshing={refreshing}
       />
 
       <div style={{
@@ -226,7 +330,7 @@ const App: React.FC = () => {
         paddingBottom: 12,
       }}>
         {weather.current && (
-          <CurrentWeather data={weather.current} city={weather.city} />
+          <CurrentWeather data={weather.current} city={weather.city} onChangeCity={handleChangeCity} />
         )}
         {weather.hourly.length > 0 && (
           <HourlyForecast forecasts={weather.hourly} />
@@ -246,6 +350,107 @@ const App: React.FC = () => {
       }}>
         闲人天气
       </div>
+
+      {/* 城市更改弹窗 */}
+      {showCityDialog && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            WebkitAppRegion: 'no-drag',
+          }}
+          onClick={handleCancelCity}
+        >
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #1B263B 0%, #243447 100%)',
+              borderRadius: 14,
+              padding: '20px 24px',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              width: 260,
+              textAlign: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              fontSize: 14,
+              color: 'rgba(255,255,255,0.7)',
+              marginBottom: 14,
+              fontWeight: 300,
+              letterSpacing: 2,
+            }}>
+              输入城市名称
+            </div>
+            <input
+              type="text"
+              value={cityInput}
+              onChange={(e) => setCityInput(e.target.value)}
+              placeholder="如：重庆长寿、北京海淀"
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: '1px solid rgba(255,255,255,0.15)',
+                background: 'rgba(0,0,0,0.3)',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 300,
+                outline: 'none',
+                fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
+                letterSpacing: 1,
+                boxSizing: 'border-box',
+              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleConfirmCity(); if (e.key === 'Escape') handleCancelCity() }}
+            />
+            <div style={{
+              display: 'flex',
+              gap: 10,
+              marginTop: 14,
+              justifyContent: 'center',
+            }}>
+              <button
+                onClick={handleCancelCity}
+                style={{
+                  padding: '6px 20px',
+                  borderRadius: 8,
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
+                  fontWeight: 300,
+                }}
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmCity}
+                style={{
+                  padding: '6px 20px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: 'rgba(79,195,247,0.3)',
+                  color: 'rgba(255,255,255,0.8)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
+                  fontWeight: 300,
+                }}
+              >
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
