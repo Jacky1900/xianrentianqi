@@ -97,9 +97,10 @@ const HourlyForecast: React.FC<Props> = ({ forecasts }) => {
           逐时预报
         </span>
         <span style={{
-          fontSize: 9,
-          color: 'rgba(255,255,255,0.25)',
+          fontSize: 11,
+          color: 'rgba(255,255,255,0.35)',
           letterSpacing: 1,
+          fontWeight: 300,
         }}>
           未来24小时
         </span>

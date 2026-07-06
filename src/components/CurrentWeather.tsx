@@ -103,32 +103,32 @@ const CurrentWeather: React.FC<Props> = ({ data, city, onChangeCity }) => {
           paddingTop: 10,
         }}>
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>体感</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>体感</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
               {data.apparentTemperature}°
             </div>
           </div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>湿度</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>湿度</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
               {data.humidity}%
             </div>
           </div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>风力</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>风力</div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
               {data.windSpeed}
             </div>
           </div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>紫外线</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>紫外线</div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
               {data.uvIndex}/11
             </div>
-            <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
               {data.uvIndex <= 2 ? '弱' : data.uvIndex <= 5 ? '中等' : data.uvIndex <= 7 ? '强' : data.uvIndex <= 10 ? '很强' : '极强'}
             </div>
           </div>

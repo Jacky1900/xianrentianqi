@@ -134,10 +134,19 @@ export interface HourlyForecast {
   precipitationProb: number
 }
 
+export interface WeatherAlert {
+  title: string
+  type: string
+  level: string
+  text: string
+  publishTime: string
+}
+
 export interface WeatherData {
   current: CurrentWeather | null
   daily: DailyForecast[]
   hourly: HourlyForecast[]
+  alerts: WeatherAlert[]
   loading: boolean
   error: string | null
   city: string
@@ -211,6 +220,7 @@ export function useWeather(initialCity = ''): WeatherData {
     current: null,
     daily: [],
     hourly: [],
+    alerts: [],
     loading: true,
     error: null,
     city: initialCity || '正在定位…',
@@ -285,6 +295,15 @@ export function useWeather(initialCity = ''): WeatherData {
           }
         })
 
+        // 解析天气预警（API 返回字段：alerts，含 title/type/level/text/publish_time）
+        const alerts: WeatherAlert[] = (json.alerts ?? []).map((a: any) => ({
+          title: a.title ?? '',
+          type: a.type ?? '',
+          level: a.level ?? '',
+          text: a.text ?? '',
+          publishTime: a.publish_time ?? '',
+        }))
+
         // 城市名显示逻辑：优先district（区级精确定位），其次city，最后fallback
         const displayCity = json.district || json.city || cityParam || '未知'
 
@@ -292,6 +311,7 @@ export function useWeather(initialCity = ''): WeatherData {
           current: currentWeather,
           daily: forecasts,
           hourly: hourlyData,
+          alerts,
           loading: false,
           error: null,
           city: displayCity,

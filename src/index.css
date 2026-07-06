@@ -67,10 +67,29 @@
     animation: urgencyFlash 0.8s ease-in-out infinite;
   }
 
+  @keyframes alertMarquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .alert-marquee-track {
+    display: inline-block;
+    white-space: nowrap;
+    animation: alertMarquee 12s linear infinite;
+  }
+
   ::-webkit-scrollbar {
     width: 0;
     height: 0;
   }
+}
+
+/* 输入框聚焦时隐藏占位提示文字 */
+input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+input:focus::placeholder {
+  color: transparent;
 }
 
 @layer components {
@@ -170,4 +189,21 @@
   .mini-icon-btn.close:hover {
     color: #ff6b6b;
   }
+}
+
+/* ===== 全局按钮 hover / active 动态反馈 ===== */
+/* 排除标题栏与小图标的极简箭头按钮（它们已有自己的 hover 变色） */
+button:not(.nokia-titlebar-btn):not(.mini-icon-btn) {
+  transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease;
+}
+
+button:not(.nokia-titlebar-btn):not(.mini-icon-btn):hover {
+  filter: brightness(1.18);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+button:not(.nokia-titlebar-btn):not(.mini-icon-btn):active {
+  transform: translateY(0) scale(0.97);
+  filter: brightness(0.92);
 }

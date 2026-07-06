@@ -1,6 +1,29 @@
 import { useState, useEffect, useCallback } from 'react'
 
 export type Urgency = 'urgent' | 'important' | 'normal'
+export type ScheduleType = 'normal' | 'swap'
+
+export interface SwapInfo {
+  // 自己的课程信息
+  myDate: string         // 自己课程日期 MM-DD
+  myPeriod: string       // 自己第几节课
+  myClass: string        // 自己班级
+  myCourse: string       // 自己课程名称
+  // 对方的课程信息
+  teacher: string        // 对方老师姓名
+  theirDate: string      // 对方课程日期 MM-DD
+  theirPeriod: string    // 对方第几节课
+  theirClass: string     // 对方班级
+  theirCourse: string    // 对方课程名称
+  // 提醒时间 - 自己
+  remindMonth: number    // 提醒月份
+  remindDay: number      // 提醒日期
+  remindHour: number     // 提醒小时
+  // 提醒时间 - 对方（老师）
+  theirRemindMonth: number    // 对方提醒月份
+  theirRemindDay: number      // 对方提醒日期
+  theirRemindHour: number     // 对方提醒小时
+}
 
 export interface Schedule {
   id: string
@@ -9,6 +32,8 @@ export interface Schedule {
   title: string
   done: boolean
   urgency: Urgency
+  type?: ScheduleType       // 'normal' 默认, 'swap' 调课
+  swapInfo?: SwapInfo       // 调课详细信息
 }
 
 const STORAGE_KEY = 'xianren-calendar-schedules'
@@ -40,24 +65,29 @@ export function useSchedules() {
     return () => window.removeEventListener('schedules-updated', handler)
   }, [])
 
-  const addSchedule = useCallback((date: string, time: string, title: string, urgency: Urgency) => {
-    const newSchedule: Schedule = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      date,
-      time,
-      title,
-      done: false,
-      urgency,
-    }
-    setSchedules((prev) => {
-      const updated = [...prev, newSchedule].sort((a, b) => {
-        if (a.date !== b.date) return a.date.localeCompare(b.date)
-        return a.time.localeCompare(b.time)
+  const addSchedule = useCallback(
+    (date: string, time: string, title: string, urgency: Urgency, type?: ScheduleType, swapInfo?: SwapInfo) => {
+      const newSchedule: Schedule = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        date,
+        time,
+        title,
+        done: false,
+        urgency,
+        type: type || 'normal',
+        swapInfo,
+      }
+      setSchedules((prev) => {
+        const updated = [...prev, newSchedule].sort((a, b) => {
+          if (a.date !== b.date) return a.date.localeCompare(b.date)
+          return a.time.localeCompare(b.time)
+        })
+        saveSchedules(updated)
+        return updated
       })
-      saveSchedules(updated)
-      return updated
-    })
-  }, [])
+    },
+    []
+  )
 
   const toggleDone = useCallback((id: string) => {
     setSchedules((prev) => {

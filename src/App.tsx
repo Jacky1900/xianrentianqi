@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import TitleBar from './components/TitleBar'
 import CurrentWeather from './components/CurrentWeather'
 import HourlyForecast from './components/HourlyForecast'
@@ -24,6 +24,16 @@ function getNowTimeStr(): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+// 预警级别颜色：红 > 橙 > 黄 > 蓝
+function getAlertColor(level: string): string {
+  const l = level || ''
+  if (l.includes('红')) return '#FF5252'
+  if (l.includes('橙')) return '#FFB74D'
+  if (l.includes('黄')) return '#FFD54F'
+  if (l.includes('蓝')) return '#4FC3F7'
+  return 'rgba(255,255,255,0.7)'
+}
+
 const App: React.FC = () => {
   const weather = useWeather()
   const { getTopUrgencyByDate, getDueSchedules } = useSchedules()
@@ -34,6 +44,8 @@ const App: React.FC = () => {
   const [cityInput, setCityInput] = useState('')
   const [isFlashing, setIsFlashing] = useState(false)
   const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set())
+  const alertRef = useRef<HTMLDivElement>(null)
+  const [alertScrolling, setAlertScrolling] = useState(false)
 
   const handleRefresh = () => {
     setRefreshing(true)
@@ -112,6 +124,26 @@ const App: React.FC = () => {
     const timer = setInterval(checkDue, 30000)
     return () => clearInterval(timer)
   }, [getDueSchedules, acknowledgedIds])
+
+  // 预警文字过长时启用左右滚动
+  useEffect(() => {
+    const el = alertRef.current
+    if (!el || !weather.alerts || weather.alerts.length === 0) {
+      setAlertScrolling(false)
+      return
+    }
+    const text = `⚠ ${weather.alerts[0].title}`
+    const cs = getComputedStyle(el)
+    const measure = document.createElement('span')
+    measure.style.visibility = 'hidden'
+    measure.style.whiteSpace = 'nowrap'
+    measure.style.font = cs.font
+    measure.textContent = text
+    el.appendChild(measure)
+    const textWidth = measure.offsetWidth
+    el.removeChild(measure)
+    setAlertScrolling(textWidth > el.clientWidth)
+  }, [weather.alerts])
 
   const handleBackToWeather = () => {
     setViewMode('weather')
@@ -226,22 +258,87 @@ const App: React.FC = () => {
             </button>
           </div>
           <WeatherIcon name={weather.current.weatherIcon} size={44} />
-          <div style={{
-            fontSize: 18,
-            fontWeight: 200,
-            color: '#fff',
-            fontFamily: '"Noto Sans SC", "Segoe UI Light", sans-serif',
-            lineHeight: 1,
-          }}>
-            {weather.current.temperature}°
-          </div>
-          <div style={{
-            fontSize: 12,
-            color: 'rgba(255,255,255,0.55)',
-            letterSpacing: 2,
-          }}>
-            {weather.current.weatherLabel}
-          </div>
+          {weather.alerts && weather.alerts.length > 0 ? (
+            <>
+              {/* 有预警：晴 + 温度 合并一行，晴在前 */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'center',
+                gap: 3,
+                fontFamily: '"Noto Sans SC", "Segoe UI Light", sans-serif',
+                lineHeight: 1,
+              }}>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 300,
+                  color: 'rgba(255,255,255,0.85)',
+                  letterSpacing: 1,
+                }}>
+                  {weather.current.weatherLabel}
+                </span>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 200,
+                  color: '#fff',
+                }}>
+                  {weather.current.temperature}°
+                </span>
+              </div>
+              {/* 预警行：过长左右滚动 */}
+              {(() => {
+                const alert = weather.alerts[0]
+                const color = getAlertColor(alert.level)
+                const content = `⚠ ${alert.title}`
+                return (
+                  <div
+                    ref={alertRef}
+                    style={{
+                      fontSize: 11,
+                      color,
+                      letterSpacing: 1,
+                      marginTop: 3,
+                      width: '100%',
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      textAlign: alertScrolling ? 'left' : 'center',
+                      fontWeight: 300,
+                    }}
+                    title={alert.text}
+                  >
+                    {alertScrolling ? (
+                      <span className="alert-marquee-track">
+                        <span>{content}</span>
+                        <span style={{ paddingLeft: 32 }}>{content}</span>
+                      </span>
+                    ) : (
+                      <span style={{ display: 'inline-block' }}>{content}</span>
+                    )}
+                  </div>
+                )
+              })()}
+            </>
+          ) : (
+            <>
+              {/* 无预警：恢复最初 各占一排（温度上、天气描述下） */}
+              <div style={{
+                fontSize: 18,
+                fontWeight: 200,
+                color: '#fff',
+                fontFamily: '"Noto Sans SC", "Segoe UI Light", sans-serif',
+                lineHeight: 1,
+              }}>
+                {weather.current.temperature}°
+              </div>
+              <div style={{
+                fontSize: 12,
+                color: 'rgba(255,255,255,0.55)',
+                letterSpacing: 2,
+              }}>
+                {weather.current.weatherLabel}
+              </div>
+            </>
+          )}
         </div>
           {/* 日历待办入口 - 根据紧急程度变色，到时间闪烁 */}
           {(() => {
@@ -259,8 +356,8 @@ const App: React.FC = () => {
             const urgencyBg = hasUnacknowledged && topUnack ? URGENCY_COLORS[topUnack.urgency] : 'transparent'
             const shouldFlash = isFlashing && hasUnacknowledged
 
-            // 闪烁时显示最紧急的日程内容，否则显示"日历  待办"
-            const displayText = shouldFlash && topUnack ? topUnack.title : '日历  待办'
+            // 闪烁时显示最紧急的日程内容，否则显示"日历  调课"
+            const displayText = shouldFlash && topUnack ? topUnack.title : '日历  调课'
 
             return (
               <div
