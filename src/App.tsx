@@ -4,6 +4,7 @@ import CurrentWeather from './components/CurrentWeather'
 import HourlyForecast from './components/HourlyForecast'
 import DailyForecast from './components/DailyForecast'
 import CalendarView from './components/CalendarView'
+import TimetableView from './components/TimetableView'
 import WeatherIcon from './components/WeatherIcon'
 import { useWeather } from './hooks/useWeather'
 import { useSchedules, Urgency } from './hooks/useSchedules'
@@ -38,7 +39,7 @@ const App: React.FC = () => {
   const weather = useWeather()
   const { getTopUrgencyByDate, getDueSchedules } = useSchedules()
   const [expanded, setExpanded] = useState(false)
-  const [viewMode, setViewMode] = useState<'weather' | 'calendar'>('weather')
+  const [viewMode, setViewMode] = useState<'weather' | 'calendar' | 'timetable'>('weather')
   const [refreshing, setRefreshing] = useState(false)
   const [showCityDialog, setShowCityDialog] = useState(false)
   const [cityInput, setCityInput] = useState('')
@@ -121,7 +122,7 @@ const App: React.FC = () => {
       }
     }
     checkDue()
-    const timer = setInterval(checkDue, 30000)
+    const timer = setInterval(checkDue, 10000)
     return () => clearInterval(timer)
   }, [getDueSchedules, acknowledgedIds])
 
@@ -153,6 +154,68 @@ const App: React.FC = () => {
     setExpanded(false)
     setViewMode('weather')
     window.electronAPI?.restoreIcon()
+  }
+
+  const handleOpenTimetable = () => {
+    setExpanded(true)
+    setViewMode('timetable')
+    window.electronAPI?.expand()
+  }
+
+  const handleBackFromTimetable = () => {
+    setExpanded(false)
+    setViewMode('weather')
+    window.electronAPI?.restoreIcon()
+  }
+
+  // ===== 收起状态：闪烁入口计算 =====
+  const flashToday = getTodayStr()
+  const flashNow = getNowTimeStr()
+  const dueSchedules = getDueSchedules(flashToday, flashNow)
+  const unacknowledgedDue = dueSchedules.filter((s) => !acknowledgedIds.has(s.id))
+  const topUnack = unacknowledgedDue.sort((a, b) => {
+    const order = { urgent: 0, important: 1, normal: 2 } as Record<Urgency, number>
+    return order[a.urgency] - order[b.urgency]
+  })[0]
+  const urgencyBg = topUnack ? URGENCY_COLORS[topUnack.urgency] : 'transparent'
+  const hasUnacknowledged = unacknowledgedDue.length > 0
+  const shouldFlash = isFlashing && hasUnacknowledged
+  const flashIsSwap = shouldFlash && topUnack?.type === 'swap'
+  const flashText = shouldFlash && topUnack ? (flashIsSwap ? '调课' : topUnack.title) : ''
+
+  const flashRef = useRef<HTMLDivElement>(null)
+  const [flashScrolling, setFlashScrolling] = useState(false)
+  useEffect(() => {
+    if (shouldFlash && !flashIsSwap && flashText) {
+      const el = flashRef.current
+      if (!el) { setFlashScrolling(false); return }
+      const measure = document.createElement('span')
+      measure.style.visibility = 'hidden'
+      measure.style.whiteSpace = 'nowrap'
+      measure.style.font = getComputedStyle(el).font
+      measure.textContent = flashText
+      el.appendChild(measure)
+      const w = measure.offsetWidth
+      el.removeChild(measure)
+      setFlashScrolling(w > el.clientWidth - 8)
+    } else {
+      setFlashScrolling(false)
+    }
+  }, [shouldFlash, flashIsSwap, flashText])
+
+  const vEntryStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.1 }
+  const entryBtnStyle: React.CSSProperties = {
+    WebkitAppRegion: 'no-drag',
+    display: 'flex',
+    alignItems: 'center',
+    padding: '2px 8px',
+    borderRadius: 4,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 10,
+    fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
+    fontWeight: 300,
+    letterSpacing: 1,
+    cursor: 'pointer',
   }
 
   // 加载中
@@ -192,6 +255,7 @@ const App: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'stretch',
+            width: 100,
             borderRadius: 16,
             background: 'rgba(13, 27, 42, 0.1)',
             overflow: 'hidden',
@@ -340,54 +404,66 @@ const App: React.FC = () => {
             </>
           )}
         </div>
-          {/* 日历待办入口 - 根据紧急程度变色，到时间闪烁 */}
-          {(() => {
-            const today = getTodayStr()
-            const now = getNowTimeStr()
-            const dueSchedules = getDueSchedules(today, now)
-            // 只要有未确认的到期日程，才显示底色和闪烁
-            const unacknowledgedDue = dueSchedules.filter((s) => !acknowledgedIds.has(s.id))
-            const hasUnacknowledged = unacknowledgedDue.length > 0
-            // 找到最紧急的未确认到期日程来决定颜色
-            const topUnack = unacknowledgedDue.sort((a, b) => {
-              const order = { urgent: 0, important: 1, normal: 2 } as Record<Urgency, number>
-              return order[a.urgency] - order[b.urgency]
-            })[0]
-            const urgencyBg = hasUnacknowledged && topUnack ? URGENCY_COLORS[topUnack.urgency] : 'transparent'
-            const shouldFlash = isFlashing && hasUnacknowledged
-
-            // 闪烁时显示最紧急的日程内容，否则显示"日历  调课"
-            const displayText = shouldFlash && topUnack ? topUnack.title : '日历  调课'
-
-            return (
-              <div
-                onClick={handleOpenCalendar}
-                className={shouldFlash ? 'urgency-flash' : ''}
-                style={{
-                  WebkitAppRegion: 'no-drag',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px 14px',
-                  color: 'rgba(255,255,255,0.8)',
-                  fontSize: 12,
-                  fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
-                  fontWeight: 300,
-                  letterSpacing: 2,
-                  cursor: 'pointer',
-                  borderTop: '1px solid rgba(255,255,255,0.06)',
-                  background: urgencyBg,
-                  transition: 'background 0.3s',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  maxWidth: '100%',
-                }}
-              >
-                {displayText}
+          {/* 日历 / 调课 / 课表 入口 - 不闪时三块竖排；闪烁时整排横向显示内容，点击进日历 */}
+          {shouldFlash ? (
+            <div
+              ref={flashRef}
+              onClick={handleOpenCalendar}
+              className="urgency-flash"
+              style={{
+                WebkitAppRegion: 'no-drag',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: flashIsSwap || !flashScrolling ? 'center' : 'flex-start',
+                padding: '6px 14px',
+                color: '#fff',
+                fontSize: 12,
+                fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
+                fontWeight: 400,
+                letterSpacing: 1,
+                cursor: 'pointer',
+                borderTop: '1px solid rgba(255,255,255,0.06)',
+                background: urgencyBg,
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {flashIsSwap ? (
+                <span>调课</span>
+              ) : flashScrolling ? (
+                <span className="alert-marquee-track">
+                  <span>{flashText}</span>
+                  <span style={{ paddingLeft: 32 }}>{flashText}</span>
+                </span>
+              ) : (
+                <span>{flashText}</span>
+              )}
+            </div>
+          ) : (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-evenly',
+              alignItems: 'center',
+              padding: '6px 14px',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <div onClick={handleOpenCalendar} style={entryBtnStyle}>
+                <div style={vEntryStyle}>
+                  {'日历'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
+                </div>
               </div>
-            )
-          })()}
+              <div onClick={handleOpenCalendar} style={entryBtnStyle}>
+                <div style={vEntryStyle}>
+                  {'调课'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
+                </div>
+              </div>
+              <div onClick={handleOpenTimetable} style={entryBtnStyle}>
+                <div style={vEntryStyle}>
+                  {'课表'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -396,6 +472,10 @@ const App: React.FC = () => {
   // === 展开状态：日历视图 ===
   if (expanded && viewMode === 'calendar') {
     return <CalendarView onBack={handleBackFromCalendar} />
+  }
+
+  if (expanded && viewMode === 'timetable') {
+    return <TimetableView onBack={handleBackFromTimetable} />
   }
 
   // === 展开状态：天气完整界面 ===

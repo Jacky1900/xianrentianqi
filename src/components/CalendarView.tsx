@@ -21,7 +21,10 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
     formatDate(today.getFullYear(), today.getMonth(), today.getDate())
   )
   const [showAddForm, setShowAddForm] = useState(false)
-  const [newTime, setNewTime] = useState('09:00')
+  const [showMonthPicker, setShowMonthPicker] = useState(false)
+  // 普通日程时间 - 时/分下拉（不预填，需手动选择）
+  const [newHour, setNewHour] = useState<number | ''>('')
+  const [newMinute, setNewMinute] = useState<number | ''>('')
   const [newTitle, setNewTitle] = useState('')
   const [newUrgency, setNewUrgency] = useState<Urgency>('normal')
   const [newType, setNewType] = useState<ScheduleType>('normal')
@@ -38,14 +41,17 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
   const [theirPeriod, setTheirPeriod] = useState('')
   const [theirClass, setTheirClass] = useState('')
   const [theirCourse, setTheirCourse] = useState('')
-  // 提醒时间 - 自己
-  const [remindMonth, setRemindMonth] = useState(today.getMonth() + 1)
-  const [remindDay, setRemindDay] = useState(today.getDate())
-  const [remindHour, setRemindHour] = useState(today.getHours())
-  // 提醒时间 - 对方（老师）
-  const [theirRemindMonth, setTheirRemindMonth] = useState(today.getMonth() + 1)
-  const [theirRemindDay, setTheirRemindDay] = useState(today.getDate())
-  const [theirRemindHour, setTheirRemindHour] = useState(today.getHours())
+  // 提醒时间 - 自己（不预填，需手动选择）
+  const [remindMonth, setRemindMonth] = useState<number | ''>('')
+  const [remindDay, setRemindDay] = useState<number | ''>('')
+  const [remindHour, setRemindHour] = useState<number | ''>('')
+  const [remindMinute, setRemindMinute] = useState<number | ''>('')
+  // 提醒时间 - 对方（教师）（不预填，需手动选择）
+  const [theirRemindMonth, setTheirRemindMonth] = useState<number | ''>('')
+  const [theirRemindDay, setTheirRemindDay] = useState<number | ''>('')
+  const [theirRemindHour, setTheirRemindHour] = useState<number | ''>('')
+  const [theirRemindMinute, setTheirRemindMinute] = useState<number | ''>('')
+  const [formError, setFormError] = useState('')
 
   const { getSchedulesByDate, addSchedule, toggleDone, deleteSchedule } = useSchedules()
 
@@ -79,15 +85,24 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
   }
 
   const handleAdd = () => {
-    if (!newTitle.trim()) return
+    setFormError('')
+    if (newType === 'normal') {
+      if (!newTitle.trim()) { setFormError('请填写日程内容'); return }
+    } else {
+      if (!myCourse.trim()) { setFormError('请填写「我的课程」（必填）'); return }
+      if (remindMonth === '' || remindDay === '' || remindHour === '' || remindMinute === '') { setFormError('请填写「提醒时间·自己」（必填）'); return }
+    }
     if (newType === 'swap') {
+      if (theirCourse.trim() && (theirRemindMonth === '' || theirRemindDay === '' || theirRemindHour === '' || theirRemindMinute === '')) {
+        setFormError('已填写对方课程，请一并填写「提醒时间·对方」（必填）'); return
+      }
       const myDateStr = `${String(myDateMonth).padStart(2, '0')}-${String(myDateDay).padStart(2, '0')}`
       const theirDateStr = `${String(theirDateMonth).padStart(2, '0')}-${String(theirDateDay).padStart(2, '0')}`
       // 提醒日期 YYYY-MM-DD（用当前年份）
       const remindDateStr = `${viewYear}-${String(remindMonth).padStart(2, '0')}-${String(remindDay).padStart(2, '0')}`
-      const remindTimeStr = `${String(remindHour).padStart(2, '0')}:00`
+      const remindTimeStr = `${String(remindHour).padStart(2, '0')}:${String(remindMinute).padStart(2, '0')}`
       const theirRemindDateStr = `${viewYear}-${String(theirRemindMonth).padStart(2, '0')}-${String(theirRemindDay).padStart(2, '0')}`
-      const theirRemindTimeStr = `${String(theirRemindHour).padStart(2, '0')}:00`
+      const theirRemindTimeStr = `${String(theirRemindHour).padStart(2, '0')}:${String(theirRemindMinute).padStart(2, '0')}`
 
       const swapInfo = {
         myDate: myDateStr,
@@ -99,18 +114,26 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
         theirPeriod: theirPeriod.trim() || '1',
         theirClass: theirClass.trim() || '未填写',
         theirCourse: theirCourse.trim() || '未填写',
-        remindMonth,
-        remindDay,
-        remindHour,
-        theirRemindMonth,
-        theirRemindDay,
-        theirRemindHour,
+        remark: newTitle.trim(),
+        remindMonth: remindMonth as number,
+        remindDay: remindDay as number,
+        remindHour: remindHour as number,
+        remindMinute: remindMinute as number,
+        theirRemindMonth: theirRemindMonth as number,
+        theirRemindDay: theirRemindDay as number,
+        theirRemindHour: theirRemindHour as number,
+        theirRemindMinute: theirRemindMinute as number,
       }
 
       // 给自己创建一条提醒
-      addSchedule(remindDateStr, remindTimeStr, `调课提醒（我）：${myCourse} ↔ ${theirCourse}`, newUrgency, 'swap', swapInfo)
-      // 给对方（老师）创建一条提醒
-      addSchedule(theirRemindDateStr, theirRemindTimeStr, `调课提醒（对方）：${myCourse} ↔ ${theirCourse}`, newUrgency, 'swap', swapInfo)
+      const myTitle = theirCourse.trim()
+        ? `调课提醒（我）：${myCourse} ↔ ${theirCourse}`
+        : `调课提醒（我）：${myCourse}`
+      addSchedule(remindDateStr, remindTimeStr, myTitle, newUrgency, 'swap', swapInfo)
+      // 仅当填写了对方课程时，才给对方（教师）创建提醒
+      if (theirCourse.trim()) {
+        addSchedule(theirRemindDateStr, theirRemindTimeStr, `调课提醒（${swapTeacher.trim() || '对方'}）：${myCourse} ↔ ${theirCourse}`, newUrgency, 'swap', swapInfo)
+      }
 
       // 清空调课字段
       setMyClass('')
@@ -120,11 +143,14 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
       setTheirCourse('')
       setMyPeriod('')
       setTheirPeriod('')
-      setTheirRemindMonth(today.getMonth() + 1)
-      setTheirRemindDay(today.getDate())
-      setTheirRemindHour(today.getHours())
+      setTheirRemindMonth('')
+      setTheirRemindDay('')
+      setTheirRemindHour('')
+      setTheirRemindMinute('')
     } else {
-      addSchedule(selectedDate, newTime, newTitle.trim(), newUrgency)
+      if (newHour === '' || newMinute === '') { setFormError('请填写日程时间（时、分）'); return }
+      const timeStr = `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`
+      addSchedule(selectedDate, timeStr, newTitle.trim(), newUrgency)
     }
     setNewTitle('')
     setNewUrgency('normal')
@@ -152,12 +178,59 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
             <line x1="3" y1="21" x2="10" y2="14" />
           </svg>
         </button>
-        <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <div style={{ position: 'relative', display: 'flex', gap: 2, alignItems: 'center' }}>
           <button className="nokia-titlebar-btn" onClick={prevMonth} title="上个月" style={{ fontSize: 18, fontWeight: 300 }}>‹</button>
-          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', letterSpacing: 1, minWidth: 80, textAlign: 'center' }}>
+          <span
+            onClick={() => setShowMonthPicker((v) => !v)}
+            title="点击选择年月"
+            style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', letterSpacing: 1, minWidth: 80, textAlign: 'center', cursor: 'pointer', WebkitAppRegion: 'no-drag' }}
+          >
             {viewYear}年{viewMonth + 1}月
           </span>
           <button className="nokia-titlebar-btn" onClick={nextMonth} title="下个月" style={{ fontSize: 18, fontWeight: 300 }}>›</button>
+
+          {showMonthPicker && (
+            <>
+              <div onClick={() => setShowMonthPicker(false)} style={{ position: 'fixed', inset: 0, zIndex: 9, WebkitAppRegion: 'no-drag' }} />
+              <div style={{
+                position: 'fixed', top: 36, left: '50%', transform: 'translateX(-50%)', zIndex: 10,
+                background: '#1B263B', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8,
+                padding: 10, width: 200, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', WebkitAppRegion: 'no-drag',
+              }}>
+                {/* 年份 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <button className="nokia-titlebar-btn" onClick={() => setViewYear((y) => y - 1)} style={{ fontSize: 16 }}>‹</button>
+                  <input
+                    type="number"
+                    value={viewYear}
+                    onChange={(e) => { const v = Number(e.target.value); if (v > 0) setViewYear(v) }}
+                    style={{ flex: 1, textAlign: 'center', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 13, outline: 'none' }}
+                  />
+                  <button className="nokia-titlebar-btn" onClick={() => setViewYear((y) => y + 1)} style={{ fontSize: 16 }}>›</button>
+                </div>
+                {/* 月份网格 */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { setViewMonth(i); setShowMonthPicker(false) }}
+                      style={{
+                        padding: '6px 0',
+                        borderRadius: 4,
+                        border: viewMonth === i ? '1px solid #4FC3F7' : '1px solid rgba(255,255,255,0.1)',
+                        background: viewMonth === i ? 'rgba(79,195,247,0.2)' : 'transparent',
+                        color: viewMonth === i ? '#4FC3F7' : 'rgba(255,255,255,0.6)',
+                        fontSize: 12,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {i + 1}月
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -307,7 +380,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
                 cursor: 'pointer',
               }}
             >
-              {showAddForm && newType === 'normal' ? '取消' : '+ 添加日程'}
+              {showAddForm && newType === 'normal' ? '取消' : '添加日程'}
             </button>
             <button
               onClick={() => {
@@ -341,20 +414,10 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
               gap: 6,
             }}>
               {newType !== 'swap' && (
-                <input
-                  type="time"
-                  value={newTime}
-                  onChange={(e) => setNewTime(e.target.value)}
-                  style={{
-                    background: 'rgba(255,255,255,0.1)',
-                    border: 'none',
-                    borderRadius: 4,
-                    padding: '4px 6px',
-                    color: '#fff',
-                    fontSize: 12,
-                    outline: 'none',
-                  }}
-                />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <ColoredSelect theme="blue" value={newHour} onChange={(v) => setNewHour(v)} placeholder="时" options={Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}时` }))} />
+                  <ColoredSelect theme="blue" value={newMinute} onChange={(v) => setNewMinute(v)} placeholder="分" options={Array.from({ length: 60 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}分` }))} />
+                </div>
               )}
               <input
                 type="text"
@@ -376,7 +439,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
               {newType === 'swap' && (
                 <>
                   {/* 自己的课程信息 */}
-                  <div style={{ fontSize: 12, color: '#BA68C8', letterSpacing: 1, marginTop: 2 }}>我的课程</div>
+                  <div style={{ fontSize: 12, color: '#BA68C8', letterSpacing: 1, marginTop: 2 }}>我的课程 <span style={{ color: '#FF5252' }}>*</span></div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <ColoredSelect theme="purple" value={myDateMonth} onChange={(v) => setMyDateMonth(v)} options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
                     <ColoredSelect theme="purple" value={myDateDay} onChange={(v) => setMyDateDay(v)} options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
@@ -387,7 +450,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
 
                   {/* 对方的课程信息 */}
                   <div style={{ fontSize: 12, color: '#4FC3F7', letterSpacing: 1, marginTop: 2 }}>对方课程</div>
-                  <input type="text" value={swapTeacher} onChange={(e) => setSwapTeacher(e.target.value)} placeholder="对方老师姓名" style={{ background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
+                  <input type="text" value={swapTeacher} onChange={(e) => setSwapTeacher(e.target.value)} placeholder="对方教师姓名" style={{ background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
                   <div style={{ display: 'flex', gap: 6 }}>
                     <ColoredSelect theme="blue" value={theirDateMonth} onChange={(v) => setTheirDateMonth(v)} options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
                     <ColoredSelect theme="blue" value={theirDateDay} onChange={(v) => setTheirDateDay(v)} options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
@@ -398,18 +461,20 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
 
                   {/* 提醒时间 */}
                   <div style={{ fontSize: 12, color: '#FF5252', letterSpacing: 1, marginTop: 2 }}>提醒时间</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,82,82,0.8)', letterSpacing: 1 }}>自己</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,82,82,0.8)', letterSpacing: 1 }}>自己 <span style={{ color: '#FF5252' }}>*</span></div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <ColoredSelect theme="red" value={remindMonth} onChange={(v) => setRemindMonth(v)} options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
-                    <ColoredSelect theme="red" value={remindDay} onChange={(v) => setRemindDay(v)} options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
-                    <ColoredSelect theme="red" value={remindHour} onChange={(v) => setRemindHour(v)} options={Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}时` }))} />
+                    <ColoredSelect theme="red" value={remindMonth} onChange={(v) => setRemindMonth(v)} placeholder="月" options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
+                    <ColoredSelect theme="red" value={remindDay} onChange={(v) => setRemindDay(v)} placeholder="日" options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
+                    <ColoredSelect theme="red" value={remindHour} onChange={(v) => setRemindHour(v)} placeholder="时" options={Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}时` }))} />
+                    <ColoredSelect theme="red" value={remindMinute} onChange={(v) => setRemindMinute(v)} placeholder="分" options={Array.from({ length: 60 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}分` }))} />
                   </div>
                   {/* 是否同时提醒对方，由用户自行决定 */}
-                  <div style={{ fontSize: 11, color: 'rgba(255,82,82,0.8)', letterSpacing: 1, marginTop: 4 }}>对方（老师）</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,82,82,0.8)', letterSpacing: 1, marginTop: 4 }}>对方（教师）</div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <ColoredSelect theme="red" value={theirRemindMonth} onChange={(v) => setTheirRemindMonth(v)} options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
-                    <ColoredSelect theme="red" value={theirRemindDay} onChange={(v) => setTheirRemindDay(v)} options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
-                    <ColoredSelect theme="red" value={theirRemindHour} onChange={(v) => setTheirRemindHour(v)} options={Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}时` }))} />
+                    <ColoredSelect theme="red" value={theirRemindMonth} onChange={(v) => setTheirRemindMonth(v)} placeholder="月" options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
+                    <ColoredSelect theme="red" value={theirRemindDay} onChange={(v) => setTheirRemindDay(v)} placeholder="日" options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
+                    <ColoredSelect theme="red" value={theirRemindHour} onChange={(v) => setTheirRemindHour(v)} placeholder="时" options={Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}时` }))} />
+                    <ColoredSelect theme="red" value={theirRemindMinute} onChange={(v) => setTheirRemindMinute(v)} placeholder="分" options={Array.from({ length: 60 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}分` }))} />
                   </div>
                 </>
               )}
@@ -438,6 +503,9 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
                   </button>
                 ))}
               </div>
+              {formError && (
+                <div style={{ fontSize: 11, color: '#FF5252', textAlign: 'center' }}>{formError}</div>
+              )}
               <button
                 onClick={handleAdd}
                 style={{
@@ -538,15 +606,18 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
                 {/* 调课详情 */}
                 {s.type === 'swap' && s.swapInfo && (
                   <div style={{
-                    fontSize: 10,
+                    fontSize: 13,
                     color: 'rgba(255,255,255,0.6)',
                     paddingLeft: 44,
-                    lineHeight: 1.7,
+                    lineHeight: 1.8,
                   }}>
                     <div style={{ color: '#4FC3F7' }}>【我的】{s.swapInfo.myDate} 第{s.swapInfo.myPeriod}节 · {s.swapInfo.myClass} · {s.swapInfo.myCourse}</div>
-                    <div style={{ color: '#FFB74D' }}>【对方】{s.swapInfo.teacher}：{s.swapInfo.theirDate} 第{s.swapInfo.theirPeriod}节 · {s.swapInfo.theirClass} · {s.swapInfo.theirCourse}</div>
-                    <div style={{ color: '#FF5252' }}>【提醒·自己】{s.swapInfo.remindMonth}月{s.swapInfo.remindDay}日 {String(s.swapInfo.remindHour).padStart(2, '0')}:00</div>
-                    <div style={{ color: '#FF5252' }}>【提醒·对方】{s.swapInfo.theirRemindMonth}月{s.swapInfo.theirRemindDay}日 {String(s.swapInfo.theirRemindHour).padStart(2, '0')}:00</div>
+                    {s.swapInfo.theirCourse && s.swapInfo.theirCourse !== '未填写' && (
+                      <div style={{ color: '#FFB74D' }}>【{s.swapInfo.teacher}】{s.swapInfo.theirDate} 第{s.swapInfo.theirPeriod}节 · {s.swapInfo.theirClass} · {s.swapInfo.theirCourse}</div>
+                    )}
+                    {s.swapInfo.remark && (
+                      <div style={{ color: 'rgba(255,255,255,0.8)' }}>【备注】{s.swapInfo.remark}</div>
+                    )}
                   </div>
                 )}
               </div>

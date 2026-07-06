@@ -10,19 +10,22 @@ export interface SwapInfo {
   myClass: string        // 自己班级
   myCourse: string       // 自己课程名称
   // 对方的课程信息
-  teacher: string        // 对方老师姓名
+  teacher: string        // 对方教师姓名
   theirDate: string      // 对方课程日期 MM-DD
   theirPeriod: string    // 对方第几节课
   theirClass: string     // 对方班级
   theirCourse: string    // 对方课程名称
+  remark: string         // 调课备注
   // 提醒时间 - 自己
   remindMonth: number    // 提醒月份
   remindDay: number      // 提醒日期
   remindHour: number     // 提醒小时
-  // 提醒时间 - 对方（老师）
+  remindMinute: number   // 提醒分钟
+  // 提醒时间 - 对方（教师）
   theirRemindMonth: number    // 对方提醒月份
   theirRemindDay: number      // 对方提醒日期
   theirRemindHour: number     // 对方提醒小时
+  theirRemindMinute: number   // 对方提醒分钟
 }
 
 export interface Schedule {

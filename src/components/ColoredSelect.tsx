@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 
-export type SelectTheme = 'purple' | 'blue' | 'red'
+export type SelectTheme = 'purple' | 'blue' | 'red' | 'green'
 
 export interface SelectOption {
   value: string | number
@@ -8,11 +8,12 @@ export interface SelectOption {
 }
 
 interface Props<T extends string | number> {
-  value: T
+  value: T | ''
   onChange: (value: T) => void
   options: SelectOption[]
   theme?: SelectTheme
   style?: React.CSSProperties
+  placeholder?: string
 }
 
 // 各区块配色：边框/底色（收起态） + 弹窗面板底色 + 选中/悬浮底色
@@ -20,6 +21,7 @@ const themeColors: Record<SelectTheme, { border: string; bg: string; panel: stri
   purple: { border: 'rgba(186,104,200,0.3)', bg: 'rgba(186,104,200,0.1)', panel: '#3D2A4D', active: 'rgba(186,104,200,0.3)' },
   blue: { border: 'rgba(79,195,247,0.3)', bg: 'rgba(79,195,247,0.1)', panel: '#1B3A4D', active: 'rgba(79,195,247,0.3)' },
   red: { border: 'rgba(255,82,82,0.3)', bg: 'rgba(255,82,82,0.1)', panel: '#4D2529', active: 'rgba(255,82,82,0.3)' },
+  green: { border: 'rgba(102,187,106,0.3)', bg: 'rgba(102,187,106,0.1)', panel: '#1B3D2A', active: 'rgba(102,187,106,0.3)' },
 }
 
 function ColoredSelect<T extends string | number>({
@@ -28,6 +30,7 @@ function ColoredSelect<T extends string | number>({
   options,
   theme = 'blue',
   style,
+  placeholder,
 }: Props<T>) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -61,7 +64,7 @@ function ColoredSelect<T extends string | number>({
           userSelect: 'none',
         }}
       >
-        <span>{current ? current.label : ''}</span>
+        <span style={{ color: current ? '#fff' : 'rgba(255,255,255,0.4)' }}>{current ? current.label : (placeholder ?? '')}</span>
         <span style={{ fontSize: 10, opacity: 0.6 }}>{open ? '▴' : '▾'}</span>
       </div>
       {open && (
