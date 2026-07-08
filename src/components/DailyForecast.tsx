@@ -25,9 +25,10 @@ const DailyForecast: React.FC<Props> = ({ forecasts }) => {
           未来七天
         </span>
         <span style={{
-          fontSize: 9,
-          color: 'rgba(255,255,255,0.25)',
+          fontSize: 11,
+          color: 'rgba(255,255,255,0.35)',
           letterSpacing: 1,
+          fontWeight: 300,
         }}>
           当日综合
         </span>

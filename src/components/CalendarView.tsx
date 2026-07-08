@@ -31,6 +31,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
   // 调课信息 - 自己的课程
   const [myDateMonth, setMyDateMonth] = useState(today.getMonth() + 1)
   const [myDateDay, setMyDateDay] = useState(today.getDate())
+  const [myWeek, setMyWeek] = useState(1)
   const [myPeriod, setMyPeriod] = useState('')
   const [myClass, setMyClass] = useState('')
   const [myCourse, setMyCourse] = useState('')
@@ -38,6 +39,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
   const [swapTeacher, setSwapTeacher] = useState('')
   const [theirDateMonth, setTheirDateMonth] = useState(today.getMonth() + 1)
   const [theirDateDay, setTheirDateDay] = useState(today.getDate())
+  const [theirWeek, setTheirWeek] = useState(1)
   const [theirPeriod, setTheirPeriod] = useState('')
   const [theirClass, setTheirClass] = useState('')
   const [theirCourse, setTheirCourse] = useState('')
@@ -53,7 +55,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
   const [theirRemindMinute, setTheirRemindMinute] = useState<number | ''>('')
   const [formError, setFormError] = useState('')
 
-  const { getSchedulesByDate, addSchedule, toggleDone, deleteSchedule } = useSchedules()
+  const { getSchedulesByDate, addSchedule, addSchedulesBatch, toggleDone, deleteSchedule } = useSchedules()
 
   // 生成日历网格
   const firstDay = new Date(viewYear, viewMonth, 1).getDay()
@@ -106,11 +108,13 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
 
       const swapInfo = {
         myDate: myDateStr,
+        myWeek: myWeek,
         myPeriod: myPeriod.trim() || '1',
         myClass: myClass.trim() || '未填写',
         myCourse: myCourse.trim() || '未填写',
         teacher: swapTeacher.trim() || '未填写',
         theirDate: theirDateStr,
+        theirWeek: theirWeek,
         theirPeriod: theirPeriod.trim() || '1',
         theirClass: theirClass.trim() || '未填写',
         theirCourse: theirCourse.trim() || '未填写',
@@ -129,11 +133,22 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
       const myTitle = theirCourse.trim()
         ? `调课提醒（我）：${myCourse} ↔ ${theirCourse}`
         : `调课提醒（我）：${myCourse}`
-      addSchedule(remindDateStr, remindTimeStr, myTitle, newUrgency, 'swap', swapInfo)
+      const items: Array<{ date: string; time: string; title: string; urgency: Urgency; type: ScheduleType; swapInfo: typeof swapInfo }> = [
+        { date: remindDateStr, time: remindTimeStr, title: myTitle, urgency: newUrgency, type: 'swap', swapInfo },
+      ]
       // 仅当填写了对方课程时，才给对方（教师）创建提醒
       if (theirCourse.trim()) {
-        addSchedule(theirRemindDateStr, theirRemindTimeStr, `调课提醒（${swapTeacher.trim() || '对方'}）：${myCourse} ↔ ${theirCourse}`, newUrgency, 'swap', swapInfo)
+        items.push({
+          date: theirRemindDateStr,
+          time: theirRemindTimeStr,
+          title: `调课提醒（${swapTeacher.trim() || '对方'}）：${myCourse} ↔ ${theirCourse}`,
+          urgency: newUrgency,
+          type: 'swap',
+          swapInfo,
+        })
       }
+      // 一次性批量添加，避免连续调用 addSchedule 造成的竞态丢失
+      addSchedulesBatch(items)
 
       // 清空调课字段
       setMyClass('')
@@ -242,7 +257,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
             <div key={i} style={{
               flex: 1,
               textAlign: 'center',
-              fontSize: 10,
+              fontSize: 11,
               color: i === 0 || i === 6 ? 'rgba(255,100,100,0.5)' : 'rgba(255,255,255,0.3)',
               fontWeight: 300,
             }}>
@@ -314,7 +329,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
                   )}
                 </div>
                 <span style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   color: special ? lunarColor : 'rgba(255,255,255,0.3)',
                   fontWeight: special ? 400 : 300,
                   lineHeight: 1.2,
@@ -443,6 +458,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
                   <div style={{ display: 'flex', gap: 6 }}>
                     <ColoredSelect theme="purple" value={myDateMonth} onChange={(v) => setMyDateMonth(v)} options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
                     <ColoredSelect theme="purple" value={myDateDay} onChange={(v) => setMyDateDay(v)} options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
+                    <ColoredSelect theme="purple" value={myWeek} onChange={(v) => setMyWeek(v)} placeholder="周" options={Array.from({ length: 26 }, (_, i) => ({ value: i + 1, label: `第${i + 1}周` }))} />
                     <input type="text" value={myPeriod} onChange={(e) => setMyPeriod(e.target.value)} placeholder="节次（如1、2节课）" style={{ flex: 1, background: 'rgba(186,104,200,0.1)', border: '1px solid rgba(186,104,200,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
                   </div>
                   <input type="text" value={myClass} onChange={(e) => setMyClass(e.target.value)} placeholder="班级（如：25级护理1班）" style={{ background: 'rgba(186,104,200,0.1)', border: '1px solid rgba(186,104,200,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
@@ -454,6 +470,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
                   <div style={{ display: 'flex', gap: 6 }}>
                     <ColoredSelect theme="blue" value={theirDateMonth} onChange={(v) => setTheirDateMonth(v)} options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
                     <ColoredSelect theme="blue" value={theirDateDay} onChange={(v) => setTheirDateDay(v)} options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
+                    <ColoredSelect theme="blue" value={theirWeek} onChange={(v) => setTheirWeek(v)} placeholder="周" options={Array.from({ length: 26 }, (_, i) => ({ value: i + 1, label: `第${i + 1}周` }))} />
                     <input type="text" value={theirPeriod} onChange={(e) => setTheirPeriod(e.target.value)} placeholder="节次（如1、2节课）" style={{ flex: 1, background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
                   </div>
                   <input type="text" value={theirClass} onChange={(e) => setTheirClass(e.target.value)} placeholder="对方班级" style={{ background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
@@ -611,9 +628,9 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
                     paddingLeft: 44,
                     lineHeight: 1.8,
                   }}>
-                    <div style={{ color: '#4FC3F7' }}>【我的】{s.swapInfo.myDate} 第{s.swapInfo.myPeriod}节 · {s.swapInfo.myClass} · {s.swapInfo.myCourse}</div>
+                    <div style={{ color: '#4FC3F7' }}>【我的】{s.swapInfo.myDate} 第{s.swapInfo.myWeek}周 第{s.swapInfo.myPeriod}节 · {s.swapInfo.myClass} · {s.swapInfo.myCourse}</div>
                     {s.swapInfo.theirCourse && s.swapInfo.theirCourse !== '未填写' && (
-                      <div style={{ color: '#FFB74D' }}>【{s.swapInfo.teacher}】{s.swapInfo.theirDate} 第{s.swapInfo.theirPeriod}节 · {s.swapInfo.theirClass} · {s.swapInfo.theirCourse}</div>
+                      <div style={{ color: '#FFB74D' }}>【{s.swapInfo.teacher}】{s.swapInfo.theirDate} 第{s.swapInfo.theirWeek}周 第{s.swapInfo.theirPeriod}节 · {s.swapInfo.theirClass} · {s.swapInfo.theirCourse}</div>
                     )}
                     {s.swapInfo.remark && (
                       <div style={{ color: 'rgba(255,255,255,0.8)' }}>【备注】{s.swapInfo.remark}</div>

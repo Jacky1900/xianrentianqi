@@ -116,10 +116,13 @@ input:focus::placeholder {
     font-size: 11px;
     cursor: pointer;
     font-family: 'Segoe UI Symbol', 'Segoe UI', sans-serif;
+    transition: transform 0.12s ease, color 0.2s, filter 0.12s ease;
   }
 
   .nokia-titlebar-btn:hover {
     color: #fff;
+    transform: translateY(-1px) scale(1.06);
+    filter: brightness(1.15);
   }
 
   .nokia-titlebar-btn.close:hover {

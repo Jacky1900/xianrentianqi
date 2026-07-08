@@ -35,6 +35,8 @@ function getAlertColor(level: string): string {
   return 'rgba(255,255,255,0.7)'
 }
 
+const ACK_STORAGE_KEY = 'xianren-ack-ids'
+
 const App: React.FC = () => {
   const weather = useWeather()
   const { getTopUrgencyByDate, getDueSchedules } = useSchedules()
@@ -44,7 +46,13 @@ const App: React.FC = () => {
   const [showCityDialog, setShowCityDialog] = useState(false)
   const [cityInput, setCityInput] = useState('')
   const [isFlashing, setIsFlashing] = useState(false)
-  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set())
+  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(() => {
+    try { const raw = localStorage.getItem(ACK_STORAGE_KEY); if (raw) return new Set(JSON.parse(raw)) } catch {}
+    return new Set()
+  })
+  useEffect(() => {
+    localStorage.setItem(ACK_STORAGE_KEY, JSON.stringify([...acknowledgedIds]))
+  }, [acknowledgedIds])
   const alertRef = useRef<HTMLDivElement>(null)
   const [alertScrolling, setAlertScrolling] = useState(false)
 
@@ -172,7 +180,13 @@ const App: React.FC = () => {
   const flashToday = getTodayStr()
   const flashNow = getNowTimeStr()
   const dueSchedules = getDueSchedules(flashToday, flashNow)
-  const unacknowledgedDue = dueSchedules.filter((s) => !acknowledgedIds.has(s.id))
+  // 超过60分钟的到期日程不再闪烁
+  const flashNowMin = parseInt(flashNow.split(':')[0]) * 60 + parseInt(flashNow.split(':')[1])
+  const isRecentlyDue = (s: { time: string }) => {
+    const [sh, sm] = s.time.split(':').map(Number)
+    return flashNowMin - (sh * 60 + sm) <= 60
+  }
+  const unacknowledgedDue = dueSchedules.filter((s) => !acknowledgedIds.has(s.id) && isRecentlyDue(s))
   const topUnack = unacknowledgedDue.sort((a, b) => {
     const order = { urgent: 0, important: 1, normal: 2 } as Record<Urgency, number>
     return order[a.urgency] - order[b.urgency]
@@ -211,7 +225,7 @@ const App: React.FC = () => {
     padding: '2px 8px',
     borderRadius: 4,
     color: 'rgba(255,255,255,0.8)',
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
     fontWeight: 300,
     letterSpacing: 1,
@@ -442,8 +456,9 @@ const App: React.FC = () => {
           ) : (
             <div style={{
               display: 'flex',
-              justifyContent: 'space-evenly',
+              justifyContent: 'center',
               alignItems: 'center',
+              gap: 6,
               padding: '6px 14px',
               borderTop: '1px solid rgba(255,255,255,0.06)',
             }}>
@@ -507,7 +522,7 @@ const App: React.FC = () => {
         paddingBottom: 12,
       }}>
         {weather.current && (
-          <CurrentWeather data={weather.current} city={weather.city} onChangeCity={handleChangeCity} />
+          <CurrentWeather data={weather.current} city={weather.city} alerts={weather.alerts} onChangeCity={handleChangeCity} />
         )}
         {weather.hourly.length > 0 && (
           <HourlyForecast forecasts={weather.hourly} />

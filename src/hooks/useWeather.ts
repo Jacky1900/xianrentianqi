@@ -113,6 +113,9 @@ export interface CurrentWeather {
   weatherCode: number
   weatherLabel: string
   weatherIcon: WeatherIconName
+  aqiLevel: number
+  aqiCategory: string
+  aqiPrimary: string
 }
 
 export interface DailyForecast {
@@ -262,6 +265,9 @@ export function useWeather(initialCity = ''): WeatherData {
           weatherCode: Number(json.weather_code ?? 0),
           weatherLabel: weatherText,
           weatherIcon: getWeatherIconByText(weatherText),
+          aqiLevel: json.aqi_quality_num ?? json.aqi_level ?? 0,
+          aqiCategory: json.aqi_quality ?? json.aqi_category ?? '',
+          aqiPrimary: json.aqi_primary ?? '',
         }
 
         // 解析7天预报（API 返回字段：temp_max, temp_min, weather_day, weather_night）
