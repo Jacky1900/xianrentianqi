@@ -32,6 +32,12 @@
     height: 100vh;
     border-radius: 14px;
     overflow: hidden;
+    -webkit-app-region: no-drag;
+  }
+
+  /* 输入控件显式 no-drag，防止 Electron drag 命中测试延迟导致无法点击 */
+  input, select, textarea {
+    -webkit-app-region: no-drag;
   }
 
   @keyframes expandIn {
@@ -94,7 +100,6 @@ input:focus::placeholder {
 
 @layer components {
   .nokia-titlebar {
-    -webkit-app-region: drag;
     height: 30px;
     display: flex;
     align-items: center;
@@ -161,9 +166,8 @@ input:focus::placeholder {
     background: rgba(255, 255, 255, 0.08);
   }
 
-  /* 收起状态小图标 - 可拖动 */
+  /* 收起状态小图标 - 可拖动（拖动由 useWindowDrag 处理，非 -webkit-app-region） */
   .weather-widget-drag {
-    -webkit-app-region: drag;
   }
 
   /* 小图标顶部按钮 - 透明背景 */

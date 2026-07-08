@@ -77,31 +77,27 @@ function loadSlots(): TimetableSlot[] {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
     const arr = JSON.parse(raw)
-    return normalizeLegacyEarlySelfStudy(arr)
+    return dedupeSlots(arr)
   } catch {
     return []
   }
 }
 
-// 修正旧版 bug：选“早自习 + N节连上”时第二节被存成 period 0/1/...（第0节、第1节），
-// 正确应为 早自习1=-1, 早自习2=-2 …。仅当某课程组含 早自习1(-1) 且同时含 >=0 的节次时才修正。
-function normalizeLegacyEarlySelfStudy(slots: TimetableSlot[]): TimetableSlot[] {
-  // 按课程身份(星期+课程名+班级+教室)分组：旧 bug 只把 period===-1 的放进组，
-  // 导致第二节(period>=0)漏出、分组永远不含 >=0 而不修正。这里把整组同课程都纳入。
-  const groups = new Map<string, TimetableSlot[]>()
+// 清理重复课程：同一星期+节次+课程+班级+教室视为重复，仅保留首条。
+// 用于自愈此前 StrictMode 双调用 bug 产生的重复数据。
+function dedupeSlots(slots: TimetableSlot[]): TimetableSlot[] {
+  const seen = new Set<string>()
+  const result: TimetableSlot[] = []
   for (const s of slots) {
-    const key = `${s.weekday}|${s.courseName}|${s.className}|${s.room}`
-    if (!groups.has(key)) groups.set(key, [])
-    groups.get(key)!.push(s)
+    const k = `${s.weekday}|${s.period}|${s.courseName}|${s.className}|${s.room}`
+    if (seen.has(k)) continue
+    seen.add(k)
+    result.push(s)
   }
-  const needFix = new Set<string>()
-  for (const arr of groups.values()) {
-    const hasAnchor = arr.some((s) => s.period === -1)
-    const hasBad = arr.some((s) => s.period >= 0)
-    if (hasAnchor && hasBad) arr.forEach((s) => needFix.add(s.id))
+  if (result.length !== slots.length) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(result)) } catch { /* ignore */ }
   }
-  if (needFix.size === 0) return slots
-  return slots.map((s) => (needFix.has(s.id) ? { ...s, period: -s.period - 2 } : s))
+  return result
 }
 
 function saveSlots(slots: TimetableSlot[]) {
@@ -110,20 +106,25 @@ function saveSlots(slots: TimetableSlot[]) {
 }
 
 export function useTimetable() {
-  const [slots, setSlots] = useState<TimetableSlot[]>([])
+  // 惰性初始化：首渲染即从 localStorage 载入，保证 state 不会处于“空但 LS 有数据”的中间态，
+  // 避免 StrictMode 双调用更新函数时 loadSlots() 兜底读到已写入数据导致重复添加。
+  const [slots, setSlots] = useState<TimetableSlot[]>(() => loadSlots())
 
   useEffect(() => {
-    setSlots(loadSlots())
     const handler = () => setSlots(loadSlots())
     window.addEventListener('timetable-updated', handler)
     return () => window.removeEventListener('timetable-updated', handler)
   }, [])
 
+  // 内容去重键：同一星期+节次+课程+班级+教室视为重复
+  const slotKey = (s: Omit<TimetableSlot, 'id'>) => `${s.weekday}|${s.period}|${s.courseName}|${s.className}|${s.room}`
+
   const addSlot = useCallback((slot: Omit<TimetableSlot, 'id'>) => {
     setSlots((prev) => {
-      // prev 可能在 HMR/重载后为空，先用 localStorage 兜底，避免覆盖已有课程
-      const base = prev.length > 0 ? prev : loadSlots()
-      const updated = [...base, { ...slot, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` }]
+      const key = slotKey(slot)
+      // 去重保护：已存在相同内容则不再添加（幂等，StrictMode 双调用也安全）
+      if (prev.some((s) => slotKey(s) === key)) return prev
+      const updated = [...prev, { ...slot, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` }]
         .sort((a, b) => a.weekday - b.weekday || periodOrder(a.period) - periodOrder(b.period))
       saveSlots(updated)
       return updated
@@ -132,10 +133,17 @@ export function useTimetable() {
 
   const addSlotsBatch = useCallback((slotList: Omit<TimetableSlot, 'id'>[]) => {
     setSlots((prev) => {
-      // prev 可能在 HMR/重载后为空，先用 localStorage 兜底，避免覆盖已有课程
-      const base = prev.length > 0 ? prev : loadSlots()
-      const newSlots = slotList.map((s) => ({ ...s, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` }))
-      const updated = [...base, ...newSlots]
+      const seen = new Set(prev.map(slotKey))
+      const toAdd = slotList
+        .filter((s) => {
+          const k = slotKey(s)
+          if (seen.has(k)) return false
+          seen.add(k) // 批次内部去重
+          return true
+        })
+        .map((s) => ({ ...s, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` }))
+      if (toAdd.length === 0) return prev
+      const updated = [...prev, ...toAdd]
         .sort((a, b) => a.weekday - b.weekday || periodOrder(a.period) - periodOrder(b.period))
       saveSlots(updated)
       return updated
@@ -144,9 +152,7 @@ export function useTimetable() {
 
   const deleteSlot = useCallback((id: string) => {
     setSlots((prev) => {
-      // prev 可能在 HMR/重载后为空，先用 localStorage 兜底，避免误清空全部课程
-      const base = prev.length > 0 ? prev : loadSlots()
-      const updated = base.filter((s) => s.id !== id)
+      const updated = prev.filter((s) => s.id !== id)
       saveSlots(updated)
       return updated
     })
@@ -165,5 +171,11 @@ export function useTimetable() {
     setSlots([])
   }, [])
 
-  return { slots, addSlot, addSlotsBatch, deleteSlot, getSlotsByWeekday, clearAllSlots }
+  // 仅清除节次时间设置数据（xianren-period-times）；不影响课程。返回空记录供组件同步 state
+  const clearPeriodTimes = useCallback((): Record<number, PeriodTime> => {
+    localStorage.removeItem(PERIOD_TIME_STORAGE)
+    return {}
+  }, [])
+
+  return { slots, addSlot, addSlotsBatch, deleteSlot, getSlotsByWeekday, clearAllSlots, clearPeriodTimes }
 }

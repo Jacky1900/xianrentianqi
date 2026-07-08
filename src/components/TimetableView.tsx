@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useLayoutEffect } from 'react'
 import { useTimetable, formatPeriodLabel, formatPeriodTime, periodOrder, loadPeriodTimes, TIME_EDIT_PERIODS, PeriodTime } from '../hooks/useTimetable'
 import ColoredSelect from './ColoredSelect'
 import TimetableGrid from './TimetableGrid'
@@ -43,7 +43,16 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
     }
   })
 
-  const { slots, getSlotsByWeekday, addSlotsBatch, deleteSlot, clearAllSlots } = useTimetable()
+  const { slots, getSlotsByWeekday, addSlotsBatch, deleteSlot, clearAllSlots, clearPeriodTimes } = useTimetable()
+
+  // 透明无边框窗口在课程/节次时间增删改后，DOM 结构剧变，Chromium 命中区域
+  // （hit-test）需要重算，否则删除数据后输入框点击会延迟出现光标。
+  // 用 useLayoutEffect（在浏览器 paint 之前同步执行）+ 依赖 slots/periodTimes，
+  // 确保每次数据变化、DOM 提交后立即强制一次同步重排，刷新命中区域，点击即时响应。
+  useLayoutEffect(() => {
+    void document.body.offsetHeight
+  }, [slots, periodTimes])
+
   const daySlots = getSlotsByWeekday(weekday)
 
   // 总览模式：直接渲染整周网格
@@ -85,6 +94,7 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
       borderRadius: 14,
       background: 'linear-gradient(180deg, #0D1B2A 0%, #1B263B 50%, #243447 100%)',
       boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+      WebkitAppRegion: 'no-drag',
     }}>
       {/* 标题栏 */}
       <div className="nokia-titlebar">
@@ -95,8 +105,8 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
         </button>
         <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', letterSpacing: 2, marginLeft: 4 }}>课程表</span>
         <span style={{ flex: 1 }} />
-        <button className="nokia-titlebar-btn" onClick={() => { if (window.confirm('确定清除所有课程数据吗？\n（节次时间设置将保留）')) clearAllSlots() }} title="清除所有课程数据" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 4px', whiteSpace: 'nowrap', color: '#FF5252', marginRight: 10 }}>
-          清除数据
+        <button className="nokia-titlebar-btn" onClick={() => { if (window.confirm('确定删除所有课程数据吗？\n（节次时间设置将保留）')) { clearAllSlots(); window.electronAPI?.focus() } }} title="删除所有课程数据" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 4px', whiteSpace: 'nowrap', color: '#FF5252', marginRight: 10 }}>
+          删除数据
         </button>
         <button className="nokia-titlebar-btn" onClick={() => setMode('overview')} title="查看完整课表" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 4px', whiteSpace: 'nowrap' }}>
           总览
@@ -163,8 +173,8 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
             }}>
               <span style={{ fontSize: 11, color: '#4FC3F7', minWidth: 42 }}>{formatPeriodLabel(s.period)}</span>
               <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', minWidth: 74 }}>{formatPeriodTime(periodTimes[s.period])}</span>
-              <span style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.85)' }}>
-                {s.courseName}<span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 6 }}>· {s.className}{s.room && s.room !== '未填写' ? ` · ${s.room}` : ''}</span>
+              <span style={{ flex: 1, fontSize: 12, color: '#66BB6A' }}>
+                {s.courseName}<span style={{ color: '#FFD54F', marginLeft: 6 }}>· {s.className}</span>{s.room && s.room !== '未填写' ? <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 6 }}>· {s.room}</span> : ''}
               </span>
               <button
                 onClick={() => deleteSlot(s.id)}
@@ -196,11 +206,11 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
               { value: 1, label: '不连上' },
               ...Array.from({ length: 7 }, (_, i) => ({ value: i + 2, label: `${i + 2}节连上` })),
             ]} />
-            <input type="text" value={className} onChange={(e) => setClassName(e.target.value)} placeholder="班级" style={{ flex: 1, minWidth: 0, background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
+            <input type="text" value={className} onChange={(e) => setClassName(e.target.value)} placeholder="班级" style={{ flex: 1, minWidth: 0, background: 'rgba(255,213,79,0.1)', border: '1px solid rgba(255,213,79,0.4)', borderRadius: 4, padding: '4px 6px', color: '#FFD54F', fontSize: 12, outline: 'none' }} />
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <input type="text" value={room} onChange={(e) => setRoom(e.target.value)} placeholder="教室" style={{ flex: 1, background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
-            <input type="text" value={courseName} onChange={(e) => setCourseName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdd()} placeholder="课程名称" style={{ flex: 1, background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
+            <input type="text" value={courseName} onChange={(e) => setCourseName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdd()} placeholder="课程名称" style={{ flex: 1, background: 'rgba(76,175,80,0.1)', border: '1px solid rgba(76,175,80,0.4)', borderRadius: 4, padding: '4px 6px', color: '#66BB6A', fontSize: 12, outline: 'none' }} />
           </div>
           {formError && <div style={{ fontSize: 11, color: '#FF5252', textAlign: 'center' }}>{formError}</div>}
           <button onClick={handleAdd} style={{ fontSize: 11, color: '#fff', background: 'rgba(79,195,247,0.3)', border: 'none', borderRadius: 4, padding: '4px', cursor: 'pointer' }}>
@@ -209,12 +219,20 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
         </div>
 
         {/* 节次时间设置（可折叠，置于页面下半部分，由用户自行填写） */}
-        <button
-          onClick={() => setShowTimeSettings((v) => !v)}
-          style={{ width: '100%', textAlign: 'left', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(79,195,247,0.25)', borderRadius: 6, padding: '5px 8px', color: '#4FC3F7', fontSize: 12, cursor: 'pointer', letterSpacing: 1, marginBottom: 6, marginTop: 12 }}
-        >
-          节次时间设置 {showTimeSettings ? '▴' : '▾'}
-        </button>
+        <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+          <button
+            onClick={() => setShowTimeSettings((v) => !v)}
+            style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(79,195,247,0.25)', borderRadius: 6, padding: '5px 8px', color: '#4FC3F7', fontSize: 12, cursor: 'pointer', letterSpacing: 1 }}
+          >
+            节次时间设置 {showTimeSettings ? '▴' : '▾'}
+          </button>
+          <button
+            onClick={() => { if (window.confirm('确定删除节次时间设置数据吗？\n（课程数据不受影响）')) { setPeriodTimes(clearPeriodTimes()); window.electronAPI?.focus() } }}
+            style={{ flex: '0 0 auto', fontSize: 12, color: '#FF5252', background: 'rgba(255,82,82,0.12)', border: '1px solid rgba(255,82,82,0.4)', borderRadius: 4, padding: '5px 10px', cursor: 'pointer', letterSpacing: 1, whiteSpace: 'nowrap' }}
+          >
+            删除数据
+          </button>
+        </div>
         {showTimeSettings && (
           <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 8, marginBottom: 8, maxHeight: 260, overflowY: 'auto' }}>
             {TIME_EDIT_PERIODS.map((p) => {

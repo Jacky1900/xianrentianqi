@@ -28,6 +28,8 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show()
+    // 透明置顶窗口启动后显式聚焦，确保输入框可立即接收键盘输入
+    mainWindow?.focus()
   })
 }
 
@@ -110,12 +112,35 @@ ipcMain.on('window-expand', () => {
   }
 
   mainWindow.setBounds({ x: Math.round(newX), y: Math.round(newY), width: EXPAND_W, height: EXPAND_H })
+  // 展开后显式聚焦窗口：透明置顶窗口 resize 后 Windows 会短暂转走焦点，
+  // 导致输入框“点击不出现光标、要等一会才能输入”。注意 setBounds 同步调用后
+  // Windows 实际 resize 是异步的，若在 resize 完成前 focus() 会被系统覆盖。
+  // 因此在 resize 事件真正完成后（窗口尺寸稳定）再 focus() 一次，确保焦点不丢。
+  mainWindow.focus()
+  const onResized = () => mainWindow?.focus()
+  mainWindow.once('resize', onResized)
 })
 
 // 收起回小图标：恢复到展开前的图标位置
 ipcMain.on('window-restore-icon', () => {
   if (!mainWindow) return
   mainWindow.setBounds({ x: collapsedX, y: collapsedY, width: 100, height: 158 })
+  mainWindow.focus()
+})
+
+// JS 拖拽：渲染进程通过 mousemove 增量设置窗口位置
+ipcMain.on('window-set-position', (_e, x: number, y: number) => {
+  if (mainWindow) mainWindow.setPosition(Math.round(x), Math.round(y))
+})
+// 注意：preload 用 sendSync 同步获取，必须用 ipcMain.on + event.returnValue，
+// 不能用 ipcMain.handle（那是给 invoke 异步用的，sendSync 拿不到返回值）
+ipcMain.on('window-get-position', (event) => {
+  event.returnValue = mainWindow ? mainWindow.getPosition() : [0, 0]
+})
+
+// 渲染进程（如原生 confirm 关闭后）主动夺回窗口焦点，避免输入框失焦导致点击无反应
+ipcMain.on('window-focus', () => {
+  mainWindow?.focus()
 })
 
 ipcMain.handle('select-ics-file', async () => {

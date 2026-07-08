@@ -182,6 +182,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
       borderRadius: 14,
       background: 'linear-gradient(180deg, #0D1B2A 0%, #1B263B 50%, #243447 100%)',
       boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+      WebkitAppRegion: 'no-drag',
     }}>
       {/* 标题栏 */}
       <div className="nokia-titlebar">
@@ -198,6 +199,7 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
           <span
             onClick={() => setShowMonthPicker((v) => !v)}
             title="点击选择年月"
+            data-no-drag
             style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', letterSpacing: 1, minWidth: 80, textAlign: 'center', cursor: 'pointer', WebkitAppRegion: 'no-drag' }}
           >
             {viewYear}年{viewMonth + 1}月
@@ -206,8 +208,8 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
 
           {showMonthPicker && (
             <>
-              <div onClick={() => setShowMonthPicker(false)} style={{ position: 'fixed', inset: 0, zIndex: 9, WebkitAppRegion: 'no-drag' }} />
-              <div style={{
+              <div onClick={() => setShowMonthPicker(false)} data-no-drag style={{ position: 'fixed', inset: 0, zIndex: 9, WebkitAppRegion: 'no-drag' }} />
+              <div data-no-drag style={{
                 position: 'fixed', top: 36, left: '50%', transform: 'translateX(-50%)', zIndex: 10,
                 background: '#1B263B', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8,
                 padding: 10, width: 200, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', WebkitAppRegion: 'no-drag',

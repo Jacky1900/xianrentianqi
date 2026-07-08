@@ -145,7 +145,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack }) => {
                       const t = formatPeriodTime(periodTimes?.[p])
                       if (!t) return null
                       return (
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: 400, marginTop: 2, whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: 400, marginTop: 2, whiteSpace: 'nowrap' }}>
                           {t}
                         </div>
                       )

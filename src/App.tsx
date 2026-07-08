@@ -8,6 +8,7 @@ import TimetableView from './components/TimetableView'
 import WeatherIcon from './components/WeatherIcon'
 import { useWeather } from './hooks/useWeather'
 import { useSchedules, Urgency } from './hooks/useSchedules'
+import { useWindowDrag } from './hooks/useWindowDrag'
 
 const URGENCY_COLORS: Record<Urgency, string> = {
   urgent: 'rgba(255, 82, 82, 0.6)',
@@ -55,6 +56,9 @@ const App: React.FC = () => {
   }, [acknowledgedIds])
   const alertRef = useRef<HTMLDivElement>(null)
   const [alertScrolling, setAlertScrolling] = useState(false)
+
+  // JS 实现窗口拖动，替代 -webkit-app-region: drag，避免透明窗口输入框点击延迟
+  useWindowDrag()
 
   const handleRefresh = () => {
     setRefreshing(true)
@@ -424,6 +428,7 @@ const App: React.FC = () => {
               ref={flashRef}
               onClick={handleOpenCalendar}
               className="urgency-flash"
+              data-no-drag
               style={{
                 WebkitAppRegion: 'no-drag',
                 display: 'flex',
@@ -454,14 +459,16 @@ const App: React.FC = () => {
               )}
             </div>
           ) : (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 14px',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
-            }}>
+            <div
+              data-no-drag
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 14px',
+                borderTop: '1px solid rgba(255,255,255,0.06)',
+              }}>
               <div onClick={handleOpenCalendar} style={entryBtnStyle}>
                 <div style={vEntryStyle}>
                   {'日历'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
@@ -506,6 +513,7 @@ const App: React.FC = () => {
         boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
         animation: 'expandIn 0.3s ease',
         position: 'relative',
+        WebkitAppRegion: 'no-drag',
       }}
     >
       <TitleBar
