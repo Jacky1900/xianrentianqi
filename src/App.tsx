@@ -8,7 +8,7 @@ import TimetableView from './components/TimetableView'
 import WeatherIcon from './components/WeatherIcon'
 import { useWeather } from './hooks/useWeather'
 import { useSchedules, Urgency } from './hooks/useSchedules'
-import { useWindowDrag } from './hooks/useWindowDrag'
+
 
 const URGENCY_COLORS: Record<Urgency, string> = {
   urgent: 'rgba(255, 82, 82, 0.6)',
@@ -56,9 +56,10 @@ const App: React.FC = () => {
   }, [acknowledgedIds])
   const alertRef = useRef<HTMLDivElement>(null)
   const [alertScrolling, setAlertScrolling] = useState(false)
+  // 小图标悬停区域：'none' | 'top' | 'bottom'，控制顶部按钮栏和底部入口的显隐
+  const [hoverZone, setHoverZone] = useState<'none' | 'top' | 'bottom'>('none')
 
-  // JS 实现窗口拖动，替代 -webkit-app-region: drag，避免透明窗口输入框点击延迟
-  useWindowDrag()
+
 
   const handleRefresh = () => {
     setRefreshing(true)
@@ -270,6 +271,7 @@ const App: React.FC = () => {
         {/* 整体外壳 - 上下都是圆角 */}
         <div
           style={{
+            position: 'relative',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'stretch',
@@ -278,10 +280,56 @@ const App: React.FC = () => {
             background: 'rgba(13, 27, 42, 0.1)',
             overflow: 'hidden',
           }}
+          onMouseLeave={() => setHoverZone('none')}
         >
-          {/* 天气内容 */}
+          {/* 顶部隐形热区 - no-drag 确保 JS 事件能触发 */}
           <div
             style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 35,
+              WebkitAppRegion: 'no-drag', zIndex: 5,
+            }}
+            onMouseEnter={() => setHoverZone('top')}
+          />
+          {/* 顶部按钮栏 - 空间折叠，悬停顶部时展开 */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 4,
+              maxHeight: hoverZone === 'top' ? 28 : 0,
+              opacity: hoverZone === 'top' ? 1 : 0,
+              overflow: 'hidden',
+              transition: 'max-height 0.2s ease, opacity 0.2s ease',
+              WebkitAppRegion: 'no-drag',
+              position: 'relative',
+              zIndex: 10,
+            }}
+            onMouseEnter={() => setHoverZone('top')}
+          >
+            {/* 展开按钮 */}
+            <button className="mini-icon-btn" onClick={handleExpand} title="展开详情">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+                <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+              </svg>
+            </button>
+            {/* 刷新按钮 */}
+            <button className="mini-icon-btn" onClick={handleRefresh} title="刷新">
+              <svg className={refreshing ? 'spin-refresh' : ''} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+            </button>
+            {/* 最小化按钮 */}
+            <button className="mini-icon-btn" onClick={handleMinimize} title="最小化">&#x2500;</button>
+            {/* 关闭按钮 */}
+            <button className="mini-icon-btn close" onClick={handleClose} title="关闭">&#x2715;</button>
+          </div>
+
+          {/* 天气内容 - 始终可见 */}
+          <div
+            style={{
+              position: 'relative',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -289,56 +337,6 @@ const App: React.FC = () => {
               padding: '10px 14px 8px',
             }}
           >
-          {/* 小图标顶部按钮栏 - 透明背景 */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 4,
-            width: '100%',
-            marginBottom: 2,
-          }}>
-            {/* 展开按钮 */}
-            <button
-              className="mini-icon-btn"
-              onClick={handleExpand}
-              title="展开详情"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 3 21 3 21 9" />
-                <polyline points="9 21 3 21 3 15" />
-                <line x1="21" y1="3" x2="14" y2="10" />
-                <line x1="3" y1="21" x2="10" y2="14" />
-              </svg>
-            </button>
-            {/* 刷新按钮 */}
-            <button
-              className="mini-icon-btn"
-              onClick={handleRefresh}
-              title="刷新"
-            >
-              <svg className={refreshing ? 'spin-refresh' : ''} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="23 4 23 10 17 10" />
-                <polyline points="1 20 1 14 7 14" />
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-              </svg>
-            </button>
-            {/* 最小化按钮 */}
-            <button
-              className="mini-icon-btn"
-              onClick={handleMinimize}
-              title="最小化"
-            >
-              &#x2500;
-            </button>
-            {/* 关闭按钮 */}
-            <button
-              className="mini-icon-btn close"
-              onClick={handleClose}
-              title="关闭"
-            >
-              &#x2715;
-            </button>
-          </div>
           <WeatherIcon name={weather.current.weatherIcon} size={44} />
           {weather.alerts && weather.alerts.length > 0 ? (
             <>
@@ -421,71 +419,89 @@ const App: React.FC = () => {
               </div>
             </>
           )}
-        </div>
-          {/* 日历 / 调课 / 课表 入口 - 不闪时三块竖排；闪烁时整排横向显示内容，点击进日历 */}
-          {shouldFlash ? (
+            {/* 底部隐形热区 - 定位于天气内容底部，no-drag 确保 JS 事件能触发 */}
             <div
-              ref={flashRef}
-              onClick={handleOpenCalendar}
-              className="urgency-flash"
-              data-no-drag
               style={{
-                WebkitAppRegion: 'no-drag',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: flashIsSwap || !flashScrolling ? 'center' : 'flex-start',
-                padding: '6px 14px',
-                color: '#fff',
-                fontSize: 12,
-                fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
-                fontWeight: 400,
-                letterSpacing: 1,
-                cursor: 'pointer',
-                borderTop: '1px solid rgba(255,255,255,0.06)',
-                background: urgencyBg,
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
+                position: 'absolute', bottom: 0, left: 0, right: 0, height: 35,
+                WebkitAppRegion: 'no-drag', zIndex: 5,
               }}
-            >
-              {flashIsSwap ? (
-                <span>调课</span>
-              ) : flashScrolling ? (
-                <span className="alert-marquee-track">
+              onMouseEnter={() => setHoverZone('bottom')}
+            />
+        </div>
+
+          {/* 底部入口 - 空间折叠，悬停底部或有闪烁提醒时展开 */}
+          <div
+            style={{
+              maxHeight: (hoverZone === 'bottom' || shouldFlash) ? 40 : 0,
+              opacity: (hoverZone === 'bottom' || shouldFlash) ? 1 : 0,
+              overflow: 'hidden',
+              transition: 'max-height 0.2s ease, opacity 0.2s ease',
+              WebkitAppRegion: 'no-drag',
+            }}
+            onMouseEnter={() => setHoverZone('bottom')}
+          >
+            {shouldFlash ? (
+              <div
+                ref={flashRef}
+                onClick={handleOpenCalendar}
+                className="urgency-flash"
+                data-no-drag
+                style={{
+                  WebkitAppRegion: 'no-drag',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: flashIsSwap || !flashScrolling ? 'center' : 'flex-start',
+                  padding: '6px 14px',
+                  color: '#fff',
+                  fontSize: 12,
+                  fontFamily: '"Noto Sans SC", "Segoe UI", sans-serif',
+                  fontWeight: 400,
+                  letterSpacing: 1,
+                  cursor: 'pointer',
+                  background: urgencyBg,
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {flashIsSwap ? (
+                  <span>调课</span>
+                ) : flashScrolling ? (
+                  <span className="alert-marquee-track">
+                    <span>{flashText}</span>
+                    <span style={{ paddingLeft: 32 }}>{flashText}</span>
+                  </span>
+                ) : (
                   <span>{flashText}</span>
-                  <span style={{ paddingLeft: 32 }}>{flashText}</span>
-                </span>
-              ) : (
-                <span>{flashText}</span>
-              )}
-            </div>
-          ) : (
-            <div
-              data-no-drag
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 6,
-                padding: '6px 14px',
-                borderTop: '1px solid rgba(255,255,255,0.06)',
-              }}>
-              <div onClick={handleOpenCalendar} style={entryBtnStyle}>
-                <div style={vEntryStyle}>
-                  {'日历'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
+                )}
+              </div>
+            ) : (
+              <div
+                data-no-drag
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 14px',
+                }}>
+                <div onClick={handleOpenCalendar} style={entryBtnStyle}>
+                  <div style={vEntryStyle}>
+                    {'日历'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
+                  </div>
+                </div>
+                <div onClick={handleOpenCalendar} style={entryBtnStyle}>
+                  <div style={vEntryStyle}>
+                    {'调课'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
+                  </div>
+                </div>
+                <div onClick={handleOpenTimetable} style={entryBtnStyle}>
+                  <div style={vEntryStyle}>
+                    {'课表'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
+                  </div>
                 </div>
               </div>
-              <div onClick={handleOpenCalendar} style={entryBtnStyle}>
-                <div style={vEntryStyle}>
-                  {'调课'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
-                </div>
-              </div>
-              <div onClick={handleOpenTimetable} style={entryBtnStyle}>
-                <div style={vEntryStyle}>
-                  {'课表'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
-                </div>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     )

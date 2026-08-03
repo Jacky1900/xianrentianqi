@@ -8,6 +8,10 @@ function createWindow() {
     width: 100,
     height: 158,
     resizable: false,
+    // 关掉 Windows 的厚边框（WS_THICKFRAME），否则无边框透明窗口顶部/边缘
+    // 仍残留不可见的缩放/最大化热区，双击标题栏会被系统最大化 → 窗口变大
+    thickFrame: false,
+    maximizable: false,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -28,9 +32,16 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show()
-    // 透明置顶窗口启动后显式聚焦，确保输入框可立即接收键盘输入
     mainWindow?.focus()
   })
+  // 双保险：运行时再强制关一次缩放/最大化，确保双击标题栏不会触发系统最大化
+  mainWindow.setResizable(false)
+  mainWindow.setMaximizable(false)
+  // 双击标题栏（-webkit-app-region: drag → HTCAPTION）时，
+  // Windows 会触发 WM_NCLBUTTONDBLCLK 尝试最大化。
+  // maximizable: false 已移除 WS_MAXIMIZEBOX，正常不会最大化，
+  // 但加一层保险：如果窗口意外进入最大化状态，立即恢复。
+  mainWindow.on('maximize', () => mainWindow.unmaximize())
 }
 
 app.whenReady().then(createWindow)
@@ -128,12 +139,12 @@ ipcMain.on('window-restore-icon', () => {
   mainWindow.focus()
 })
 
-// JS 拖拽：渲染进程通过 mousemove 增量设置窗口位置
+// JS 拖拽：渲染进程设置窗口位置（异步版本，用于非拖动场景）
 ipcMain.on('window-set-position', (_e, x: number, y: number) => {
-  if (mainWindow) mainWindow.setPosition(Math.round(x), Math.round(y))
+  if (!mainWindow) return
+  mainWindow.setPosition(Math.round(x), Math.round(y))
 })
-// 注意：preload 用 sendSync 同步获取，必须用 ipcMain.on + event.returnValue，
-// 不能用 ipcMain.handle（那是给 invoke 异步用的，sendSync 拿不到返回值）
+
 ipcMain.on('window-get-position', (event) => {
   event.returnValue = mainWindow ? mainWindow.getPosition() : [0, 0]
 })

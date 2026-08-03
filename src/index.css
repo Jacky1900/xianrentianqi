@@ -106,6 +106,7 @@ input:focus::placeholder {
     justify-content: space-between;
     padding: 0 10px;
     background: transparent;
+    -webkit-app-region: drag;
   }
 
   .nokia-titlebar-btn {
@@ -166,8 +167,9 @@ input:focus::placeholder {
     background: rgba(255, 255, 255, 0.08);
   }
 
-  /* 收起状态小图标 - 可拖动（拖动由 useWindowDrag 处理，非 -webkit-app-region） */
+  /* 收起状态小图标 - OS 原生拖动（-webkit-app-region: drag） */
   .weather-widget-drag {
+    -webkit-app-region: drag;
   }
 
   /* 小图标顶部按钮 - 透明背景 */
