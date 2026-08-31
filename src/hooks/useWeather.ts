@@ -108,6 +108,7 @@ export interface CurrentWeather {
   temperature: number
   apparentTemperature: number
   humidity: number
+  precipitation: number
   windSpeed: string
   uvIndex: number
   weatherCode: number
@@ -260,6 +261,7 @@ export function useWeather(initialCity = ''): WeatherData {
           temperature: json.temperature ?? 0,
           apparentTemperature: json.feels_like ?? json.apparent_temperature ?? json.temperature ?? 0,
           humidity: json.humidity ?? 0,
+          precipitation: json.precipitation ?? 0,
           windSpeed: `${json.wind_direction ?? ''} ${json.wind_power ?? json.wind_force ?? ''}`.trim(),
           uvIndex: json.uv_index ?? json.uv ?? 0,
           weatherCode: Number(json.weather_code ?? 0),

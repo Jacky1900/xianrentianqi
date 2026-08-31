@@ -424,17 +424,49 @@ const WeatherIcon: React.FC<Props> = ({ name, size = 48 }) => {
     ),
     thunderstorm: (
       <g>
+        {/* 后层云 - 深色，营造层次 */}
         <path
-          d="M14 20 Q14 10 24 10 Q26 4 34 6 Q44 4 46 12 Q54 12 54 20 Q54 26 48 26 L18 26 Q12 26 14 20 Z"
+          d="M8 18 Q8 8 18 8 Q20 2 28 4 Q40 2 42 10 Q52 10 52 18 Q52 24 46 24 L12 24 Q6 24 8 18 Z"
+          fill={`url(#cloud-dark-${uid})`}
+          opacity="0.6"
+          filter={`url(#shadow-${uid})`}
+        />
+        {/* 前层云 */}
+        <path
+          d="M14 22 Q14 12 24 12 Q26 6 34 8 Q44 6 46 14 Q54 14 54 22 Q54 28 48 28 L18 28 Q12 28 14 22 Z"
           fill={`url(#cloud-dark-${uid})`}
           filter={`url(#shadow-${uid})`}
         />
-        {/* 闪电 - 渐变立体 */}
+        {/* 云朵高光 */}
         <path
-          d="M30 30 L23 44 L30 44 L26 58 L40 40 L33 40 L37 30 Z"
+          d="M18 16 Q20 14 24 14 Q26 10 32 11"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.5"
+          opacity="0.4"
+          strokeLinecap="round"
+        />
+        {/* 闪电 - 整体左移4px */}
+        <path
+          d="M29 30 L20 44 L27 44 L23 58 L38 40 L31 40 L35 30 Z"
           fill={`url(#lightning-${uid})`}
           filter={`url(#shadow-${uid})`}
         />
+        {/* 闪电高光 */}
+        <path
+          d="M29 30 L27 34 L31 34 L35 30 Z"
+          fill="#FFFFFF"
+          opacity="0.5"
+        />
+        {/* 雨滴 - 右侧2颗，垂直对齐，上移接近云朵下缘 */}
+        <g fill={`url(#rain-${uid})`} filter={`url(#shadow-${uid})`}>
+          <path d="M47 32 Q43.5 37 47 40 Q50.5 37 47 32 Z" />
+          <path d="M47 44 Q43.5 49 47 52 Q50.5 49 47 44 Z" />
+        </g>
+        <g fill="#FFFFFF" opacity="0.35">
+          <ellipse cx="45.5" cy="36" rx="1.5" ry="1" />
+          <ellipse cx="45.5" cy="48" rx="1.5" ry="1" />
+        </g>
       </g>
     ),
     'thunderstorm-hail': (

@@ -126,7 +126,9 @@ const CurrentWeather: React.FC<Props> = ({ data, city, alerts, onChangeCity }) =
                 fontSize: 20,
                 fontWeight: 200,
                 color: 'rgba(255,255,255,0.5)',
-                verticalAlign: 'super',
+                position: 'relative',
+                top: '-1em',
+                left: '0.1em',
               }}>°</span>
             </div>
 
@@ -159,48 +161,55 @@ const CurrentWeather: React.FC<Props> = ({ data, city, alerts, onChangeCity }) =
           </div>
         </div>
 
-        {/* 详细信息 - 横排 + 分隔线 */}
+        {/* 详细信息 - 横排 + 分隔线（6项：体感/湿度/风力/降水/空气/紫外线） */}
         <div style={{
           display: 'flex',
           borderTop: '1px solid rgba(255,255,255,0.08)',
           paddingTop: 10,
         }}>
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>体感</div>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
+          <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>体感</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
               {data.apparentTemperature}°
             </div>
           </div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>湿度</div>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
+          <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>湿度</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
               {data.humidity}%
             </div>
           </div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>风力</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
+          <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>风力</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
               {data.windSpeed}
             </div>
           </div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>空气</div>
+          <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>降水</div>
+            <div style={{ fontSize: 11, color: data.precipitation > 0 ? '#4FC3F7' : 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
+              {data.precipitation}mm
+            </div>
+          </div>
+          <div style={{ width: 1, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>空气</div>
             {data.aqiCategory ? (
-              <div style={{ fontSize: 12, fontWeight: 300, color: (() => {
+              <div style={{ fontSize: 11, fontWeight: 300, color: (() => {
                 const c = ['','#81C784','#FFD54F','#FFB74D','#FF8A65','#E57373','#BA68C8']
                 return c[data.aqiLevel] || 'rgba(255,255,255,0.85)'
               })() }}>{data.aqiCategory}</div>
             ) : (
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>--</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>--</div>
             )}
           </div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>紫外线</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
+          <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>紫外线</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
               {data.uvIndex}/11
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>

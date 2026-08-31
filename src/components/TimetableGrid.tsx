@@ -1,12 +1,16 @@
 import React from 'react'
-import { TimetableSlot, periodOrder, formatPeriodLabel, formatPeriodRange, formatPeriodTime, PeriodTime } from '../hooks/useTimetable'
+import { TimetableSlot, periodOrder, formatPeriodRange, formatPeriodTime, TIME_SEGMENTS, PeriodTime } from '../hooks/useTimetable'
 
 const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+
+// 节次所属时段（用于限制"连上"合并不跨时段，避免与时段分隔行错位）
+const segOf = (p: number) => TIME_SEGMENTS.find((s) => s.periods.includes(p))
 
 interface Props {
   slots: TimetableSlot[]
   periodTimes?: Record<number, PeriodTime>
-  onBack: () => void
+  onBack: () => void   // 回课表录入页（右上角"课表输入"按钮）
+  onHome: () => void   // 回天气小图标界面（左上角箭头）
 }
 
 interface CellPlan {
@@ -15,14 +19,27 @@ interface CellPlan {
   slot?: TimetableSlot   // 显示的课程（段首才有）
 }
 
-const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack }) => {
+const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) => {
   const today = new Date()
   const todayWeekday = today.getDay() === 0 ? 7 : today.getDay()
 
-  // 行：取实际出现的节次（含早/晚自习），默认至少包含 1~8 节（不预留 9/10/11/12 空行）
-  const usedPeriods = new Set<number>([1, 2, 3, 4, 5, 6, 7, 8])
-  slots.forEach((s) => usedPeriods.add(s.period))
-  const rowPeriods = [...usedPeriods].sort((a, b) => periodOrder(a) - periodOrder(b))
+  // 行：按时段动态生成。每时段行数 = max(全周实际用到的最大节次序号, 保底行数)，
+  // 行号连续（空档节次保留空行）；完全没排到的靠后节次整排隐藏。
+  const rowPeriods: number[] = []
+  // 每节次所属时段信息：是否时段首行、该时段总行数（用于左侧纵向时段列 rowSpan 合并）
+  const segMeta: Record<number, { label: string; segIdx: number; isSegStart: boolean; segRows: number }> = {}
+  for (const seg of TIME_SEGMENTS) {
+    let maxIdx = 0
+    for (const s of slots) {
+      const idx = seg.periods.indexOf(s.period)
+      if (idx + 1 > maxIdx) maxIdx = idx + 1
+    }
+    const rows = Math.max(maxIdx, seg.minRows)
+    seg.periods.slice(0, rows).forEach((p, i) => {
+      rowPeriods.push(p)
+      segMeta[p] = { label: seg.label, segIdx: i + 1, isSegStart: i === 0, segRows: rows }
+    })
+  }
 
   // 只显示有课程的天：未录入任何课的那天（含周六、周日）不显示对应列
   const activeWeekdays = Array.from(new Set(slots.map((s) => s.weekday))).sort((a, b) => a - b)
@@ -44,6 +61,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack }) => {
       while (
         i + len < daySlots.length &&
         periodOrder(daySlots[i + len].period) === periodOrder(cur.period) + len &&
+        segOf(cur.period) === segOf(daySlots[i + len].period) &&
         `${daySlots[i + len].courseName}|${daySlots[i + len].className}|${daySlots[i + len].room}` === key
       ) {
         len++
@@ -81,7 +99,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack }) => {
     }}>
       {/* 标题栏 */}
       <div className="nokia-titlebar">
-        <button className="nokia-titlebar-btn" onClick={onBack} title="返回录入" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <button className="nokia-titlebar-btn" onClick={onHome} title="返回天气" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
@@ -102,6 +120,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack }) => {
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, color: '#fff', tableLayout: 'fixed' }}>
             <colgroup>
+              <col style={{ width: 22 }} />
               <col style={{ width: 74 }} />
               {activeWeekdays.map((wd) => (
                 <col key={wd} />
@@ -109,6 +128,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack }) => {
             </colgroup>
             <thead>
               <tr>
+                <th style={{ ...thBase, padding: '9px 2px' }} />
                 <th style={{ ...thBase, textAlign: 'center' }}>节次</th>
                 {activeWeekdays.map((wd) => {
                   const label = weekLabels[wd - 1]
@@ -128,8 +148,29 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack }) => {
               </tr>
             </thead>
             <tbody>
-              {rowPeriods.map((p) => (
+              {rowPeriods.flatMap((p, i) => {
+                const prev = i > 0 ? rowPeriods[i - 1] : undefined
+                const items: React.ReactNode[] = []
+                if (prev !== undefined && segMeta[prev].label !== segMeta[p].label) {
+                  items.push(
+                    <tr key={`sep-${p}`}>
+                      <td colSpan={2 + activeWeekdays.length} style={{ height: 6, padding: 0, border: 'none' }} />
+                    </tr>
+                  )
+                }
+                items.push(
                 <tr key={p}>
+                  {segMeta[p].isSegStart && (
+                    <td rowSpan={segMeta[p].segRows} style={{
+                      padding: 0,
+                      border: '1px solid rgba(79,195,247,0.35)',
+                      background: 'rgba(255,255,255,0.02)',
+                      textAlign: 'center',
+                      verticalAlign: 'middle',
+                    }}>
+                      <span style={{ writingMode: 'vertical-rl', fontSize: 11, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>{segMeta[p].label}</span>
+                    </td>
+                  )}
                   <td style={{
                     textAlign: 'center',
                     padding: '8px 4px',
@@ -140,7 +181,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack }) => {
                     border: '1px solid rgba(79,195,247,0.35)',
                     whiteSpace: 'nowrap',
                   }}>
-                    {formatPeriodLabel(p)}
+                    {`第${segMeta[p].segIdx}节`}
                     {(() => {
                       const t = formatPeriodTime(periodTimes?.[p])
                       if (!t) return null
@@ -199,7 +240,9 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack }) => {
                     )
                   })}
                 </tr>
-              ))}
+                )
+                return items
+              })}
             </tbody>
           </table>
         )}

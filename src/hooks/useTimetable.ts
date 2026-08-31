@@ -26,12 +26,26 @@ export function formatPeriodLabel(p: number): string {
   return `晚自习${p - 12}`
 }
 
+// 带时段前缀的完整节次文案："上午第1节"、"下午第2节"；早自习N、晚自习N 已带前缀，原样返回
+// 上午/下午按时段内部编号显示（下午第1节 = 全局第7节），底层存储仍是全局编号
+export function formatPeriodFullLabel(p: number): string {
+  for (const seg of TIME_SEGMENTS) {
+    const idx = seg.periods.indexOf(p)
+    if (idx >= 0) {
+      if (seg.key === 'am' || seg.key === 'pm') return `${seg.label}第${idx + 1}节`
+      return formatPeriodLabel(p)
+    }
+  }
+  return formatPeriodLabel(p)
+}
+
 // 跨多节（“X节连上”）的显示文案
 export function formatPeriodRange(a: number, b: number): string {
-  if (a >= 1 && b <= 12) return `${a}–${b}节`
   if (a < 0 && b < 0) return `早自习${-a}-${-b}`
-  if (a > 12 && b > 12) return `${a - 12}-${b - 12}`
-  return `${formatPeriodLabel(a)}–${formatPeriodLabel(b)}`
+  if (a > 12 && b > 12) return `晚自习${a - 12}-${b - 12}`
+  if (a >= 1 && b <= 6) return `上午第${a}-${b}节`
+  if (a >= 7 && b <= 12) return `下午第${a - 6}-${b - 6}节`
+  return `${formatPeriodFullLabel(a)}–${formatPeriodFullLabel(b)}`
 }
 
 // ============ 每节课时间 ============
@@ -45,9 +59,25 @@ const PERIOD_TIME_STORAGE = 'xianren-period-times'
 // 时间不预设默认值：每个学校不同，由用户在录入页下半部分自行填写。
 
 // 所有可配置时间的节次（按显示顺序）
-export const TIME_EDIT_PERIODS: number[] = [-2, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].sort(
+export const TIME_EDIT_PERIODS: number[] = [-2, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].sort(
   (a, b) => periodOrder(a) - periodOrder(b)
 )
+
+// ============ 时段划分 ============
+// 早自习 2 节 + 上午 6 节 + 下午 6 节 + 晚自习 3 节，共 17 节
+export interface TimeSegment {
+  key: string          // 时段标识（下拉 value）
+  label: string        // 显示文案：早自习/上午/下午/晚自习
+  periods: number[]    // 该时段包含的节次（按显示顺序）
+  minRows: number      // 课表总览保底行数
+}
+
+export const TIME_SEGMENTS: TimeSegment[] = [
+  { key: 'morning-study', label: '早自习', periods: [-1, -2], minRows: 1 },
+  { key: 'am', label: '上午', periods: [1, 2, 3, 4, 5, 6], minRows: 4 },
+  { key: 'pm', label: '下午', periods: [7, 8, 9, 10, 11, 12], minRows: 3 },
+  { key: 'evening-study', label: '晚自习', periods: [13, 14, 15], minRows: 2 },
+]
 
 export function loadPeriodTimes(): Record<number, PeriodTime> {
   try {

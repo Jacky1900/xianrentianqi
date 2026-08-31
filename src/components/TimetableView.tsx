@@ -1,6 +1,7 @@
 import React, { useState, useLayoutEffect } from 'react'
-import { useTimetable, formatPeriodLabel, formatPeriodTime, periodOrder, loadPeriodTimes, TIME_EDIT_PERIODS, PeriodTime } from '../hooks/useTimetable'
+import { useTimetable, formatPeriodFullLabel, formatPeriodTime, periodOrder, loadPeriodTimes, TIME_EDIT_PERIODS, TIME_SEGMENTS, PeriodTime } from '../hooks/useTimetable'
 import ColoredSelect from './ColoredSelect'
+import ConfirmDialog from './ConfirmDialog'
 import TimetableGrid from './TimetableGrid'
 
 interface Props {
@@ -21,6 +22,15 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
   const [formError, setFormError] = useState('')
   const [periodTimes, setPeriodTimes] = useState<Record<number, PeriodTime>>(() => loadPeriodTimes())
   const [showTimeSettings, setShowTimeSettings] = useState(false)
+  const [segment, setSegment] = useState('')
+  // 应用内确认弹层（替代 window.confirm，避免原生模态对话框抢走透明窗口焦点）
+  const [confirmState, setConfirmState] = useState<{ message: string; onOk: () => void } | null>(null)
+
+  // 起始节次选项：未选时段时列出全部节次，选了时段则只列出该时段内的节次（早2/上6/下6/晚3）
+  // 显示统一带时段前缀（上午第X节/下午第X节），下午按内部编号（下午第1节=全局第7节），底层存全局编号
+  const activeSegment = TIME_SEGMENTS.find((s) => s.key === segment)
+  const periodOptions = (activeSegment ? activeSegment.periods : TIME_SEGMENTS.flatMap((s) => s.periods))
+    .map((p) => ({ value: p, label: formatPeriodFullLabel(p) }))
 
   const updatePeriodTime = (p: number, field: 'start' | 'end', val: string) => {
     setPeriodTimes((prev) => {
@@ -57,7 +67,7 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
 
   // 总览模式：直接渲染整周网格
   if (mode === 'overview') {
-    return <TimetableGrid slots={slots} periodTimes={periodTimes} onBack={() => setMode('edit')} />
+    return <TimetableGrid slots={slots} periodTimes={periodTimes} onBack={() => setMode('edit')} onHome={onBack} />
   }
 
   const handleAdd = () => {
@@ -78,6 +88,7 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
     const conflict = slots.some((s) => existing.some((e) => e.period === s.period))
     if (conflict) { setFormError('部分节次已有课程，请先删除后再添加'); return }
     addSlotsBatch(slots)
+    setSegment('')
     setPeriod('')
     setPeriodCount(1)
     setClassName('')
@@ -105,7 +116,7 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
         </button>
         <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', letterSpacing: 2, marginLeft: 4 }}>课程表</span>
         <span style={{ flex: 1 }} />
-        <button className="nokia-titlebar-btn" onClick={() => { if (window.confirm('确定删除所有课程数据吗？\n（节次时间设置将保留）')) { clearAllSlots(); window.electronAPI?.focus() } }} title="删除所有课程数据" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 4px', whiteSpace: 'nowrap', color: '#FF5252', marginRight: 10 }}>
+        <button className="nokia-titlebar-btn" onClick={() => setConfirmState({ message: '确定删除所有课程数据吗？\n（节次时间设置将保留）', onOk: () => { clearAllSlots(); window.electronAPI?.focus() } })} title="删除所有课程数据" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 4px', whiteSpace: 'nowrap', color: '#FF5252', marginRight: 10 }}>
           删除数据
         </button>
         <button className="nokia-titlebar-btn" onClick={() => setMode('overview')} title="查看完整课表" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 4px', whiteSpace: 'nowrap' }}>
@@ -124,6 +135,7 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
               key={wd}
               onClick={() => {
                 setWeekday(wd)
+                setSegment('')
                 setPeriod('')
                 setPeriodCount(1)
                 setClassName('')
@@ -171,7 +183,7 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
               borderRadius: 6,
               borderLeft: '2px solid #4FC3F7',
             }}>
-              <span style={{ fontSize: 11, color: '#4FC3F7', minWidth: 42 }}>{formatPeriodLabel(s.period)}</span>
+              <span style={{ fontSize: 11, color: '#4FC3F7', minWidth: 56 }}>{formatPeriodFullLabel(s.period)}</span>
               <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', minWidth: 74 }}>{formatPeriodTime(periodTimes[s.period])}</span>
               <span style={{ flex: 1, fontSize: 12, color: '#66BB6A' }}>
                 {s.courseName}<span style={{ color: '#FFD54F', marginLeft: 6 }}>· {s.className}</span>{s.room && s.room !== '未填写' ? <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 6 }}>· {s.room}</span> : ''}
@@ -197,20 +209,17 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
         }}>
           <div style={{ fontSize: 12, color: '#4FC3F7', letterSpacing: 1 }}>添加课程 · {weekLabels[weekday - 1]}</div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <ColoredSelect theme="blue" value={period} onChange={(v) => setPeriod(v)} placeholder="起始节次" style={{ flex: 0.5, minWidth: 0 }} options={[
-              { value: -1, label: '早自习' },
-              ...Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `第${i + 1}节` })),
-              { value: 13, label: '晚自习' },
-            ]} />
+            <ColoredSelect theme="purple" value={segment} onChange={(v) => { setSegment(v); setPeriod('') }} placeholder="时段" style={{ flex: 0.5, minWidth: 0 }} options={TIME_SEGMENTS.map((s) => ({ value: s.key, label: s.label }))} />
+            <ColoredSelect theme="blue" value={period} onChange={(v) => setPeriod(v)} placeholder="起始节次" style={{ flex: 0.5, minWidth: 0 }} options={periodOptions} />
             <ColoredSelect theme="blue" value={periodCount} onChange={(v) => setPeriodCount(v)} placeholder="连续节数" style={{ flex: 0.5, minWidth: 0 }} options={[
               { value: 1, label: '不连上' },
               ...Array.from({ length: 7 }, (_, i) => ({ value: i + 2, label: `${i + 2}节连上` })),
             ]} />
-            <input type="text" value={className} onChange={(e) => setClassName(e.target.value)} placeholder="班级" style={{ flex: 1, minWidth: 0, background: 'rgba(255,213,79,0.1)', border: '1px solid rgba(255,213,79,0.4)', borderRadius: 4, padding: '4px 6px', color: '#FFD54F', fontSize: 12, outline: 'none' }} />
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <input type="text" value={room} onChange={(e) => setRoom(e.target.value)} placeholder="教室" style={{ flex: 1, background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
-            <input type="text" value={courseName} onChange={(e) => setCourseName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdd()} placeholder="课程名称" style={{ flex: 1, background: 'rgba(76,175,80,0.1)', border: '1px solid rgba(76,175,80,0.4)', borderRadius: 4, padding: '4px 6px', color: '#66BB6A', fontSize: 12, outline: 'none' }} />
+            <input type="text" value={className} onChange={(e) => setClassName(e.target.value)} placeholder="班级" style={{ flex: 1, minWidth: 0, background: 'rgba(255,213,79,0.1)', border: '1px solid rgba(255,213,79,0.4)', borderRadius: 4, padding: '4px 6px', color: '#FFD54F', fontSize: 12, outline: 'none' }} />
+            <input type="text" value={room} onChange={(e) => setRoom(e.target.value)} placeholder="教室" style={{ flex: 1, minWidth: 0, background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
+            <input type="text" value={courseName} onChange={(e) => setCourseName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdd()} placeholder="课程名称" style={{ flex: 1, minWidth: 0, background: 'rgba(76,175,80,0.1)', border: '1px solid rgba(76,175,80,0.4)', borderRadius: 4, padding: '4px 6px', color: '#66BB6A', fontSize: 12, outline: 'none' }} />
           </div>
           {formError && <div style={{ fontSize: 11, color: '#FF5252', textAlign: 'center' }}>{formError}</div>}
           <button onClick={handleAdd} style={{ fontSize: 11, color: '#fff', background: 'rgba(79,195,247,0.3)', border: 'none', borderRadius: 4, padding: '4px', cursor: 'pointer' }}>
@@ -227,33 +236,33 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
             节次时间设置 {showTimeSettings ? '▴' : '▾'}
           </button>
           <button
-            onClick={() => { if (window.confirm('确定删除节次时间设置数据吗？\n（课程数据不受影响）')) { setPeriodTimes(clearPeriodTimes()); window.electronAPI?.focus() } }}
+            onClick={() => setConfirmState({ message: '确定删除节次时间设置数据吗？\n（课程数据不受影响）', onOk: () => { setPeriodTimes(clearPeriodTimes()); window.electronAPI?.focus() } })}
             style={{ flex: '0 0 auto', fontSize: 12, color: '#FF5252', background: 'rgba(255,82,82,0.12)', border: '1px solid rgba(255,82,82,0.4)', borderRadius: 4, padding: '5px 10px', cursor: 'pointer', letterSpacing: 1, whiteSpace: 'nowrap' }}
           >
             删除数据
           </button>
         </div>
         {showTimeSettings && (
-          <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 8, marginBottom: 8, maxHeight: 260, overflowY: 'auto' }}>
+          <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 8, marginBottom: 8, maxHeight: 420, overflowY: 'auto' }}>
             {TIME_EDIT_PERIODS.map((p) => {
               const t = periodTimes[p] ?? { start: '', end: '' }
               return (
-                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', minWidth: 64 }}>{formatPeriodLabel(p)}</span>
+                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', minWidth: 56 }}>{formatPeriodFullLabel(p)}</span>
                   <input
                     type="text"
                     value={t.start}
                     onChange={(e) => updatePeriodTime(p, 'start', e.target.value)}
                     placeholder="起始(如8:30)"
-                    style={{ flex: 1, minWidth: 0, background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '3px 6px', color: '#fff', fontSize: 12, outline: 'none' }}
+                    style={{ flex: 1, minWidth: 0, background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '2px 5px', color: '#fff', fontSize: 11, outline: 'none' }}
                   />
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>–</span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>–</span>
                   <input
                     type="text"
                     value={t.end}
                     onChange={(e) => updatePeriodTime(p, 'end', e.target.value)}
                     placeholder="结束(如9:10)"
-                    style={{ flex: 1, minWidth: 0, background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '3px 6px', color: '#fff', fontSize: 12, outline: 'none' }}
+                    style={{ flex: 1, minWidth: 0, background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '2px 5px', color: '#fff', fontSize: 11, outline: 'none' }}
                   />
                 </div>
               )
@@ -267,6 +276,15 @@ const TimetableView: React.FC<Props> = ({ onBack }) => {
           </div>
         )}
       </div>
+
+      {/* 应用内确认弹层：替代 window.confirm，焦点不离开窗口 */}
+      {confirmState && (
+        <ConfirmDialog
+          message={confirmState.message}
+          onOk={() => { const onOk = confirmState.onOk; setConfirmState(null); onOk() }}
+          onCancel={() => setConfirmState(null)}
+        />
+      )}
     </div>
   )
 }
