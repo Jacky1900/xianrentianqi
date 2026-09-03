@@ -53,8 +53,9 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
   // ===== 调课高亮：读取调课提醒，把"我的课程/对方课程"的日期+节次
   // 换算成课表格子（星期几 × 节次），对应格子底色标红 =====
   const { schedules } = useSchedules()
-  const swapHighlightKeys: Set<string> = React.useMemo(() => {
-    const keys = new Set<string>()
+  // 高亮格子 → 悬停提示文字（该格子被哪些调课提醒命中）
+  const swapHighlightMap: Map<string, string[]> = React.useMemo(() => {
+    const map = new Map<string, string[]>()
     const year = new Date().getFullYear()
     for (const s of schedules) {
       if (s.type !== 'swap' || !s.swapInfo) continue
@@ -73,15 +74,24 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
         if (swapDate < todayStart) continue
         const wd = swapDate.getDay()
         const weekday = wd === 0 ? 7 : wd
+        // 悬停提示：调课日期 + 我的课程信息
+        const tip = `${mm}月${dd}日调课：${s.swapInfo.myCourse || '我的课程'}${s.swapInfo.myClass && s.swapInfo.myClass !== '未填写' ? `（${s.swapInfo.myClass}）` : ''}`
         // 节次文本解析为全局节次编号（如"1、2节" → [1,2]）
         for (const p of parsePeriodText(b.periodText)) {
-          keys.add(`${weekday}|${p}`)
+          const k = `${weekday}|${p}`
+          if (!map.has(k)) map.set(k, [])
+          map.get(k)!.push(tip)
         }
       }
     }
-    return keys
+    return map
   }, [schedules])
-  const isSwapHighlighted = (weekday: number, period: number) => swapHighlightKeys.has(`${weekday}|${period}`)
+  const isSwapHighlighted = (weekday: number, period: number) => swapHighlightMap.has(`${weekday}|${period}`)
+  // 悬停提示：命中多条调课时逐行显示
+  const swapTip = (weekday: number, period: number) => {
+    const list = swapHighlightMap.get(`${weekday}|${period}`)
+    return list && list.length ? list.join('\n') : undefined
+  }
 
   // 行：按时段动态生成。每时段行数 = max(全周实际用到的最大节次序号, 保底行数)，
   // 行号连续（空档节次保留空行）；完全没排到的靠后节次整排隐藏。
@@ -288,7 +298,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                     if (!cell || !cell.slot) {
                       const hl = isSwapHighlighted(wd, p)
                       return (
-                        <td key={wd} className={hl ? 'swap-hl' : undefined} style={{
+                        <td key={wd} className={hl ? 'swap-hl' : undefined} title={hl ? swapTip(wd, p) : undefined} style={{
                         padding: '8px 6px',
                         border: hl ? '1px solid rgba(255,82,82,0.6)' : '1px solid rgba(79,195,247,0.35)',
                         background: hl ? 'rgba(255,82,82,0.25)' : (isTodayCol ? 'rgba(79,195,247,0.08)' : 'transparent'),
@@ -298,9 +308,12 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                     }
                     const s = cell.slot
                     // 连堂合并格：覆盖的任意一节被调课命中即标红
-                    const hl = rowPeriods.slice(i, i + cell.rowspan).some((pp) => isSwapHighlighted(wd, pp))
+                    const covered = rowPeriods.slice(i, i + cell.rowspan)
+                    const hl = covered.some((pp) => isSwapHighlighted(wd, pp))
+                    // 悬停提示：合并格内所有命中的调课提醒去重后逐行显示
+                    const tips = Array.from(new Set(covered.flatMap((pp) => swapHighlightMap.get(`${wd}|${pp}`) || [])))
                     return (
-                      <td key={wd} rowSpan={cell.rowspan} className={hl ? 'swap-hl' : undefined} style={{
+                      <td key={wd} rowSpan={cell.rowspan} className={hl ? 'swap-hl' : undefined} title={hl ? tips.join('\n') : undefined} style={{
                         padding: '9px 9px',
                         verticalAlign: 'top',
                         border: hl ? '1px solid rgba(255,82,82,0.6)' : '1px solid rgba(79,195,247,0.35)',
