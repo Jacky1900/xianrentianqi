@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   expand: () => ipcRenderer.send('window-expand'),
   restoreIcon: () => ipcRenderer.send('window-restore-icon'),
   selectICSFile: () => ipcRenderer.invoke('select-ics-file'),
+  exportTimetablePDF: () => ipcRenderer.invoke('export-timetable-pdf'),
   setPosition: (x: number, y: number) => ipcRenderer.send('window-set-position', x, y),
   getPosition: () => ipcRenderer.sendSync('window-get-position'),
   focus: () => ipcRenderer.send('window-focus'),

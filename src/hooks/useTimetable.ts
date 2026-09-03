@@ -102,6 +102,36 @@ export function formatPeriodTime(t?: PeriodTime): string {
   return t.start || t.end || ''
 }
 
+// 解析调课提醒中的节次文本为全局节次编号数组。
+// 支持："1、2节" "3-4节" "下午1、2节" "上午第3节" "晚自习1" "早自习2" 等。
+// 全局编号：早自习N=-N；上午1~6节=1~6；下午第N节=N+6；晚自习N=12+N。
+export function parsePeriodText(text: string): number[] {
+  if (!text) return []
+  const t = text.replace(/\s+/g, '').replace(/第/g, '')
+  let offset = 0
+  let negative = false
+  let evening = false
+  if (t.includes('早自习')) negative = true
+  else if (t.includes('下午')) offset = 6
+  else if (t.includes('晚自习')) evening = true
+
+  const nums: number[] = []
+  // 先提取范围（如 3-4、3~4、3至4）
+  const rest = t.replace(/(\d+)[-~至](\d+)/g, (_m, a, b) => {
+    const s = Number(a), e = Number(b)
+    for (let i = s; i <= e && i - s < 15; i++) nums.push(i)
+    return ''
+  })
+  // 再提取剩余的单个数字（列举，如 1、2 或 1,2）
+  const listRe = /\d+/g
+  let m: RegExpExecArray | null
+  while ((m = listRe.exec(rest)) !== null) nums.push(Number(m[0]))
+
+  return Array.from(new Set(nums))
+    .map((n) => (negative ? -n : evening ? 12 + n : n + offset))
+    .filter((p) => p >= -2 && p <= 15 && p !== 0)
+}
+
 function loadSlots(): TimetableSlot[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, screen, shell } from 'electron'
 import path from 'path'
 
 let mainWindow: BrowserWindow | null = null
@@ -152,6 +152,70 @@ ipcMain.on('window-get-position', (event) => {
 // 渲染进程（如原生 confirm 关闭后）主动夺回窗口焦点，避免输入框失焦导致点击无反应
 ipcMain.on('window-focus', () => {
   mainWindow?.focus()
+})
+
+// 课表导出为 PDF：复用打印样式（@media print + @page A4 纵向），
+// 生成矢量 PDF（文字可选中），拷到其他电脑打开即可直接打印。
+// 弹对话框让用户选位置；所选位置写入失败时自动兜底（下载文件夹）。
+//
+// 【重大 BUG 修复】绝不能直接在 mainWindow 上 printToPDF：
+// 主窗口是 transparent: true 的透明无边框窗口，透明窗口 + 打印合成
+// 会打崩 GPU 进程（曾连带系统显卡驱动 TDR，用户桌面消失"死机"）。
+// 改为：后台开一个隐藏的"非透明"打印窗口，加载同一应用的 #print-timetable
+// 视图（App 检测该 hash 后直接渲染课表总览），在它上面生成 PDF，
+// 完成后立即销毁。主窗口全程不参与打印。
+ipcMain.handle('export-timetable-pdf', async () => {
+  if (!mainWindow) return { ok: false, error: '窗口未就绪' }
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: '课表导出为 PDF',
+      defaultPath: path.join(app.getPath('desktop'), '课表总览.pdf'),
+      filters: [{ name: 'PDF 文件', extensions: ['pdf'] }],
+    })
+    if (result.canceled || !result.filePath) return { ok: false, canceled: true }
+
+    // 隐藏的非透明打印窗口（show:false + 不设 transparent）
+    const printWin = new BrowserWindow({
+      show: false,
+      width: 800,
+      height: 1000,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
+    })
+    try {
+      if (process.env.VITE_DEV_SERVER_URL) {
+        await printWin.loadURL(`${process.env.VITE_DEV_SERVER_URL}#print-timetable`)
+      } else {
+        await printWin.loadFile(path.join(__dirname, '../dist/index.html'), { hash: 'print-timetable' })
+      }
+      // 等渲染稳定（课表数据从 localStorage 同步读取很快，留足字体加载时间）
+      await new Promise((r) => setTimeout(r, 500))
+      const pdf = await printWin.webContents.printToPDF({ preferCSSPageSize: true, printBackground: true })
+      const fs = await import('fs')
+      const write = (p: string) => {
+        fs.mkdirSync(path.dirname(p), { recursive: true })
+        fs.writeFileSync(p, pdf)
+      }
+      try {
+        write(result.filePath)
+        shell.showItemInFolder(result.filePath)
+        return { ok: true, path: result.filePath }
+      } catch {
+        // 所选位置不可写：自动兜底到"下载"文件夹
+        const fallback = path.join(app.getPath('downloads'), '课表总览.pdf')
+        write(fallback)
+        shell.showItemInFolder(fallback)
+        return { ok: true, path: fallback, fallbackFrom: result.filePath }
+      }
+    } finally {
+      printWin.destroy()
+    }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
 })
 
 ipcMain.handle('select-ics-file', async () => {

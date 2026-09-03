@@ -1,5 +1,6 @@
 import React from 'react'
-import { TimetableSlot, periodOrder, formatPeriodRange, formatPeriodTime, TIME_SEGMENTS, PeriodTime } from '../hooks/useTimetable'
+import { TimetableSlot, periodOrder, formatPeriodRange, formatPeriodTime, TIME_SEGMENTS, PeriodTime, parsePeriodText } from '../hooks/useTimetable'
+import { useSchedules } from '../hooks/useSchedules'
 
 const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 
@@ -22,6 +23,65 @@ interface CellPlan {
 const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) => {
   const today = new Date()
   const todayWeekday = today.getDay() === 0 ? 7 : today.getDay()
+
+  // 导出 PDF 反馈提示（成功/失败原因），几秒后自动消失
+  const [pdfTip, setPdfTip] = React.useState('')
+  const [exporting, setExporting] = React.useState(false)
+  const handleExportPDF = async () => {
+    if (exporting) return
+    setExporting(true)
+    setPdfTip('')
+    try {
+      const r = await window.electronAPI.exportTimetablePDF()
+      if (r?.ok && r.path) {
+        if (r.fallbackFrom) {
+          // 所选位置写不进去，自动存到了"下载"文件夹
+          setPdfTip('所选位置无法写入，已改存到下载文件夹')
+        } else {
+          setPdfTip('PDF 已保存，可直接拷去打印')
+        }
+      } else if (r?.error) {
+        setPdfTip(`导出失败：${r.error}`)
+      }
+    } catch {
+      setPdfTip('导出失败')
+    }
+    setExporting(false)
+    setTimeout(() => setPdfTip(''), 5000)
+  }
+
+  // ===== 调课高亮：读取调课提醒，把"我的课程/对方课程"的日期+节次
+  // 换算成课表格子（星期几 × 节次），对应格子底色标红 =====
+  const { schedules } = useSchedules()
+  const swapHighlightKeys: Set<string> = React.useMemo(() => {
+    const keys = new Set<string>()
+    const year = new Date().getFullYear()
+    for (const s of schedules) {
+      if (s.type !== 'swap' || !s.swapInfo) continue
+      // 只标"我的课程"相关格子——这是自己的课表，对方的课不在本表内
+      const blocks: Array<{ date: string; periodText: string }> = [
+        { date: s.swapInfo.myDate, periodText: s.swapInfo.myPeriod },
+      ]
+      for (const b of blocks) {
+        // 日期格式 MM-DD，按真实日历换算成星期几（1=周一 ... 7=周日）
+        const [mm, dd] = b.date.split('-').map(Number)
+        if (!mm || !dd) continue
+        const swapDate = new Date(year, mm - 1, dd)
+        // 调课日期已过期的不再标记（历史调课无需提示）
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+        if (swapDate < todayStart) continue
+        const wd = swapDate.getDay()
+        const weekday = wd === 0 ? 7 : wd
+        // 节次文本解析为全局节次编号（如"1、2节" → [1,2]）
+        for (const p of parsePeriodText(b.periodText)) {
+          keys.add(`${weekday}|${p}`)
+        }
+      }
+    }
+    return keys
+  }, [schedules])
+  const isSwapHighlighted = (weekday: number, period: number) => swapHighlightKeys.has(`${weekday}|${period}`)
 
   // 行：按时段动态生成。每时段行数 = max(全周实际用到的最大节次序号, 保底行数)，
   // 行号连续（空档节次保留空行）；完全没排到的靠后节次整排隐藏。
@@ -88,7 +148,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
   }
 
   return (
-    <div style={{
+    <div className="timetable-print" style={{
       height: '100vh',
       display: 'flex',
       flexDirection: 'column',
@@ -96,6 +156,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
       borderRadius: 14,
       background: 'linear-gradient(180deg, #0D1B2A 0%, #1B263B 50%, #243447 100%)',
       boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+      position: 'relative',
     }}>
       {/* 标题栏 */}
       <div className="nokia-titlebar">
@@ -106,13 +167,39 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
         </button>
         <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', letterSpacing: 2, marginLeft: 4 }}>课表总览</span>
         <span style={{ flex: 1 }} />
+        <button className="nokia-titlebar-btn" onClick={handleExportPDF} disabled={exporting} title="一键导出 PDF（自动保存，可在其他电脑打印）" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 6px', marginRight: 6, whiteSpace: 'nowrap', color: '#69F0AE' }}>
+          {exporting ? '导出中…' : '存PDF'}
+        </button>
+        <button className="nokia-titlebar-btn" onClick={() => window.print()} title="打印课表" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 6px', marginRight: 6, whiteSpace: 'nowrap', color: '#4FC3F7' }}>
+          打印
+        </button>
         <button className="nokia-titlebar-btn" onClick={onBack} title="进入课表输入" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 6px', whiteSpace: 'nowrap', color: '#4FC3F7' }}>
           课表输入
         </button>
       </div>
 
+      {/* 打印时才显示的标题（屏幕上隐藏） */}
+      <div className="timetable-print-title">课表总览</div>
+
+      {/* 导出结果浮动提示 */}
+      {pdfTip && (
+        <div style={{ position: 'absolute', top: 46, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 5, pointerEvents: 'none' }}>
+          <span style={{
+            background: 'rgba(13,27,42,0.92)',
+            color: pdfTip.startsWith('导出失败') ? '#FF8A80' : '#69F0AE',
+            fontSize: 12,
+            padding: '5px 14px',
+            borderRadius: 12,
+            border: '1px solid rgba(79,195,247,0.3)',
+            whiteSpace: 'nowrap',
+          }}>
+            {pdfTip}
+          </span>
+        </div>
+      )}
+
       {/* 表格区 */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '8px 10px 12px' }}>
+      <div className="timetable-scroll" style={{ flex: 1, overflow: 'auto', padding: '8px 10px 12px' }}>
         {slots.length === 0 ? (
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', textAlign: 'center', padding: '24px 0' }}>
             还没有课程，先去录入吧
@@ -153,7 +240,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                 const items: React.ReactNode[] = []
                 if (prev !== undefined && segMeta[prev].label !== segMeta[p].label) {
                   items.push(
-                    <tr key={`sep-${p}`}>
+                    <tr key={`sep-${p}`} className="timetable-sep">
                       <td colSpan={2 + activeWeekdays.length} style={{ height: 6, padding: 0, border: 'none' }} />
                     </tr>
                   )
@@ -161,7 +248,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                 items.push(
                 <tr key={p}>
                   {segMeta[p].isSegStart && (
-                    <td rowSpan={segMeta[p].segRows} style={{
+                    <td rowSpan={segMeta[p].segRows} className="seg-label-td" style={{
                       padding: 0,
                       border: '1px solid rgba(79,195,247,0.35)',
                       background: 'rgba(255,255,255,0.02)',
@@ -186,7 +273,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                       const t = formatPeriodTime(periodTimes?.[p])
                       if (!t) return null
                       return (
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: 400, marginTop: 2, whiteSpace: 'nowrap' }}>
+                        <div className="period-time" style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: 400, marginTop: 2, whiteSpace: 'nowrap' }}>
                           {t}
                         </div>
                       )
@@ -199,25 +286,33 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                     if (cell?.skip) return null
                     // 无课：渲染空格占位，保证表格结构完整
                     if (!cell || !cell.slot) {
+                      const hl = isSwapHighlighted(wd, p)
                       return (
-                        <td key={wd} style={{
+                        <td key={wd} className={hl ? 'swap-hl' : undefined} style={{
                         padding: '8px 6px',
-                        border: '1px solid rgba(79,195,247,0.35)',
-                        background: isTodayCol ? 'rgba(79,195,247,0.08)' : 'transparent',
+                        border: hl ? '1px solid rgba(255,82,82,0.6)' : '1px solid rgba(79,195,247,0.35)',
+                        background: hl ? 'rgba(255,82,82,0.25)' : (isTodayCol ? 'rgba(79,195,247,0.08)' : 'transparent'),
                         height: 44,
                         }} />
                       )
                     }
                     const s = cell.slot
+                    // 连堂合并格：覆盖的任意一节被调课命中即标红
+                    const hl = rowPeriods.slice(i, i + cell.rowspan).some((pp) => isSwapHighlighted(wd, pp))
                     return (
-                      <td key={wd} rowSpan={cell.rowspan} style={{
+                      <td key={wd} rowSpan={cell.rowspan} className={hl ? 'swap-hl' : undefined} style={{
                         padding: '9px 9px',
                         verticalAlign: 'top',
-                        border: '1px solid rgba(79,195,247,0.35)',
-                        borderLeft: '2px solid #4FC3F7',
-                        background: isTodayCol ? 'rgba(79,195,247,0.2)' : 'rgba(79,195,247,0.1)',
+                        border: hl ? '1px solid rgba(255,82,82,0.6)' : '1px solid rgba(79,195,247,0.35)',
+                        borderLeft: hl ? '2px solid #FF5252' : '2px solid #4FC3F7',
+                        background: hl ? 'rgba(255,82,82,0.3)' : (isTodayCol ? 'rgba(79,195,247,0.2)' : 'rgba(79,195,247,0.1)'),
                         borderRadius: 4,
                       }}>
+                        {hl && (
+                          <div style={{ fontSize: 11, color: '#FF8A80', fontWeight: 600, marginBottom: 2, letterSpacing: 1 }}>
+                            调课
+                          </div>
+                        )}
                         <div style={{ fontSize: 12, color: '#69F0AE', fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-all' }}>
                           {s.courseName}
                         </div>

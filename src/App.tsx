@@ -38,15 +38,22 @@ function getAlertColor(level: string): string {
 
 const ACK_STORAGE_KEY = 'xianren-ack-ids'
 
+// 打印专用视图标记：主进程导出 PDF 时会用隐藏窗口加载 "#print-timetable"，
+// 此时直接渲染课表总览（跳过天气加载界面），供 printToPDF 使用。
+const isPrintTimetable =
+  typeof window !== 'undefined' && window.location.hash.includes('print-timetable')
+
 const App: React.FC = () => {
   const weather = useWeather()
   const { getTopUrgencyByDate, getDueSchedules } = useSchedules()
-  const [expanded, setExpanded] = useState(false)
-  const [viewMode, setViewMode] = useState<'weather' | 'calendar' | 'timetable'>('weather')
+  const [expanded, setExpanded] = useState(isPrintTimetable)
+  const [viewMode, setViewMode] = useState<'weather' | 'calendar' | 'timetable'>(isPrintTimetable ? 'timetable' : 'weather')
   const [refreshing, setRefreshing] = useState(false)
   const [showCityDialog, setShowCityDialog] = useState(false)
   const [cityInput, setCityInput] = useState('')
   const [isFlashing, setIsFlashing] = useState(false)
+  // 进入日历时是否直接展开"调课提醒"表单（点小图标"调课"入口时为 true）
+  const [openWithSwapForm, setOpenWithSwapForm] = useState(false)
   const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(() => {
     try { const raw = localStorage.getItem(ACK_STORAGE_KEY); if (raw) return new Set(JSON.parse(raw)) } catch {}
     return new Set()
@@ -104,7 +111,7 @@ const App: React.FC = () => {
     window.electronAPI?.expand()
   }
 
-  const handleOpenCalendar = () => {
+  const handleOpenCalendar = (withSwapForm = false) => {
     // 点击闪烁图标时，把当前到时间的日程标记为已确认
     const today = getTodayStr()
     const now = getNowTimeStr()
@@ -117,6 +124,7 @@ const App: React.FC = () => {
       })
     }
     setIsFlashing(false)
+    setOpenWithSwapForm(withSwapForm)
     setExpanded(true)
     setViewMode('calendar')
     window.electronAPI?.expand()
@@ -185,13 +193,8 @@ const App: React.FC = () => {
   const flashToday = getTodayStr()
   const flashNow = getNowTimeStr()
   const dueSchedules = getDueSchedules(flashToday, flashNow)
-  // 超过60分钟的到期日程不再闪烁
-  const flashNowMin = parseInt(flashNow.split(':')[0]) * 60 + parseInt(flashNow.split(':')[1])
-  const isRecentlyDue = (s: { time: string }) => {
-    const [sh, sm] = s.time.split(':').map(Number)
-    return flashNowMin - (sh * 60 + sm) <= 60
-  }
-  const unacknowledgedDue = dueSchedules.filter((s) => !acknowledgedIds.has(s.id) && isRecentlyDue(s))
+  // 到期日程持续闪烁，直到用户点击确认
+  const unacknowledgedDue = dueSchedules.filter((s) => !acknowledgedIds.has(s.id))
   const topUnack = unacknowledgedDue.sort((a, b) => {
     const order = { urgent: 0, important: 1, normal: 2 } as Record<Urgency, number>
     return order[a.urgency] - order[b.urgency]
@@ -237,8 +240,8 @@ const App: React.FC = () => {
     cursor: 'pointer',
   }
 
-  // 加载中
-  if (weather.loading) {
+  // 加载中（打印视图跳过：课表数据来自 localStorage，不依赖天气接口）
+  if (weather.loading && !isPrintTimetable) {
     return (
       <div style={{
         height: '100vh',
@@ -443,7 +446,7 @@ const App: React.FC = () => {
             {shouldFlash ? (
               <div
                 ref={flashRef}
-                onClick={handleOpenCalendar}
+                onClick={() => handleOpenCalendar(false)}
                 className="urgency-flash"
                 data-no-drag
                 style={{
@@ -484,12 +487,12 @@ const App: React.FC = () => {
                   gap: 6,
                   padding: '6px 14px',
                 }}>
-                <div onClick={handleOpenCalendar} style={entryBtnStyle}>
+                <div onClick={() => handleOpenCalendar(false)} style={entryBtnStyle}>
                   <div style={vEntryStyle}>
                     {'日历'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
                   </div>
                 </div>
-                <div onClick={handleOpenCalendar} style={entryBtnStyle}>
+                <div onClick={() => handleOpenCalendar(true)} style={entryBtnStyle}>
                   <div style={vEntryStyle}>
                     {'调课'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
                   </div>
@@ -509,7 +512,7 @@ const App: React.FC = () => {
 
   // === 展开状态：日历视图 ===
   if (expanded && viewMode === 'calendar') {
-    return <CalendarView onBack={handleBackFromCalendar} />
+    return <CalendarView onBack={handleBackFromCalendar} initialShowSwapForm={openWithSwapForm} />
   }
 
   if (expanded && viewMode === 'timetable') {

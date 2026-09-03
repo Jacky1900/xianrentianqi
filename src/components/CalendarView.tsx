@@ -1,10 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSchedules, Urgency, ScheduleType } from '../hooks/useSchedules'
 import { getLunarDayInfo, getCellLabel, isSpecialDay } from '../utils/lunar'
+import { TIME_SEGMENTS, formatPeriodFullLabel } from '../hooks/useTimetable'
 import ColoredSelect from './ColoredSelect'
 
 interface Props {
   onBack: () => void
+  initialShowSwapForm?: boolean
 }
 
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
@@ -13,26 +15,28 @@ function formatDate(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
-const CalendarView: React.FC<Props> = ({ onBack }) => {
+const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
   const today = new Date()
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
   const [selectedDate, setSelectedDate] = useState(
     formatDate(today.getFullYear(), today.getMonth(), today.getDate())
   )
-  const [showAddForm, setShowAddForm] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(!!initialShowSwapForm)
   const [showMonthPicker, setShowMonthPicker] = useState(false)
   // 普通日程时间 - 时/分下拉（不预填，需手动选择）
   const [newHour, setNewHour] = useState<number | ''>('')
   const [newMinute, setNewMinute] = useState<number | ''>('')
   const [newTitle, setNewTitle] = useState('')
   const [newUrgency, setNewUrgency] = useState<Urgency>('normal')
-  const [newType, setNewType] = useState<ScheduleType>('normal')
+  const [newType, setNewType] = useState<ScheduleType>(initialShowSwapForm ? 'swap' : 'normal')
   // 调课信息 - 自己的课程
   const [myDateMonth, setMyDateMonth] = useState(today.getMonth() + 1)
   const [myDateDay, setMyDateDay] = useState(today.getDate())
   const [myWeek, setMyWeek] = useState(1)
-  const [myPeriod, setMyPeriod] = useState('')
+  const [mySeg, setMySeg] = useState('')
+  const [myPeriodStart, setMyPeriodStart] = useState<number | ''>('')
+  const [myPeriodCount, setMyPeriodCount] = useState(1)
   const [myClass, setMyClass] = useState('')
   const [myCourse, setMyCourse] = useState('')
   // 调课信息 - 对方的课程
@@ -40,9 +44,15 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
   const [theirDateMonth, setTheirDateMonth] = useState(today.getMonth() + 1)
   const [theirDateDay, setTheirDateDay] = useState(today.getDate())
   const [theirWeek, setTheirWeek] = useState(1)
-  const [theirPeriod, setTheirPeriod] = useState('')
+  const [theirSeg, setTheirSeg] = useState('')
+  const [theirPeriodStart, setTheirPeriodStart] = useState<number | ''>('')
+  const [theirPeriodCount, setTheirPeriodCount] = useState(1)
   const [theirClass, setTheirClass] = useState('')
   const [theirCourse, setTheirCourse] = useState('')
+  // 调课表单联动标记：区分"自动带入的值"和"用户手动选择的值"，只联动未被手动的字段
+  const [theirClassTouched, setTheirClassTouched] = useState(false)
+  const [remindDateTouched, setRemindDateTouched] = useState(false)
+  const [theirRemindDateTouched, setTheirRemindDateTouched] = useState(false)
   // 提醒时间 - 自己（不预填，需手动选择）
   const [remindMonth, setRemindMonth] = useState<number | ''>('')
   const [remindDay, setRemindDay] = useState<number | ''>('')
@@ -56,6 +66,54 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
   const [formError, setFormError] = useState('')
 
   const { getSchedulesByDate, addSchedule, addSchedulesBatch, toggleDone, deleteSchedule } = useSchedules()
+
+  // ===== 调课表单智能联动 =====
+  // 1. 填了"我的班级"后，对方班级自动同步（用户手动改过对方班级则不再同步）
+  useEffect(() => {
+    if (!theirClassTouched && myClass.trim()) {
+      setTheirClass(myClass)
+    }
+  }, [myClass, theirClassTouched])
+
+  // 2. "提醒时间·自己"的月日自动带入"对方课程"的月日（用户手动选过则不再带入）
+  useEffect(() => {
+    if (!remindDateTouched && theirDateMonth && theirDateDay) {
+      setRemindMonth(theirDateMonth)
+      setRemindDay(theirDateDay)
+    }
+  }, [theirDateMonth, theirDateDay, remindDateTouched])
+
+  // 3. "提醒时间·对方"的月日自动带入"我的课程"的月日（用户手动选过则不再带入）
+  useEffect(() => {
+    if (!theirRemindDateTouched && myDateMonth && myDateDay) {
+      setTheirRemindMonth(myDateMonth)
+      setTheirRemindDay(myDateDay)
+    }
+  }, [myDateMonth, myDateDay, theirRemindDateTouched])
+
+  // ===== 调课节次选择（与课程录入一致：时段 → 起始节次 → 连上）=====
+  // 选了时段后节次下拉只列该时段内的节次（早2/上6/下6/晚3）
+  const mySegDef = TIME_SEGMENTS.find((s) => s.key === mySeg)
+  const myPeriodOptions = (mySegDef ? mySegDef.periods : TIME_SEGMENTS.flatMap((s) => s.periods))
+    .map((p) => ({ value: p, label: formatPeriodFullLabel(p) }))
+  const theirSegDef = TIME_SEGMENTS.find((s) => s.key === theirSeg)
+  const theirPeriodOptions = (theirSegDef ? theirSegDef.periods : TIME_SEGMENTS.flatMap((s) => s.periods))
+    .map((p) => ({ value: p, label: formatPeriodFullLabel(p) }))
+  // 连上节数选项：与课程录入完全一致（不连上 + 2~8节连上）
+  const countOptions = [
+    { value: 1, label: '不连上' },
+    ...Array.from({ length: 7 }, (_, i) => ({ value: i + 2, label: `${i + 2}节连上` })),
+  ]
+  // 合成节次文本（存入 swapInfo，供列表显示和课表总览红色标记解析）
+  const buildPeriodText = (start: number | '', count: number): string => {
+    if (start === '') return ''
+    if (count <= 1) return formatPeriodFullLabel(start)
+    const last = start + count - 1
+    if (start < 0 && last < 0) return `早自习${-start}-${-last}`
+    if (start > 12 && last > 12) return `晚自习${start - 12}-${last - 12}`
+    if (start >= 7) return `下午第${start - 6}-${last - 6}节`
+    return `上午第${start}-${last}节`
+  }
 
   // 生成日历网格
   const firstDay = new Date(viewYear, viewMonth, 1).getDay()
@@ -92,9 +150,13 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
       if (!newTitle.trim()) { setFormError('请填写日程内容'); return }
     } else {
       if (!myCourse.trim()) { setFormError('请填写「我的课程」（必填）'); return }
+      if (mySeg === '' || myPeriodStart === '') { setFormError('请在「我的课程」选择时段和节次'); return }
       if (remindMonth === '' || remindDay === '' || remindHour === '' || remindMinute === '') { setFormError('请填写「提醒时间·自己」（必填）'); return }
     }
     if (newType === 'swap') {
+      if (theirCourse.trim() && (theirSeg === '' || theirPeriodStart === '')) {
+        setFormError('已填写对方课程，请选择对方课程的时段和节次'); return
+      }
       if (theirCourse.trim() && (theirRemindMonth === '' || theirRemindDay === '' || theirRemindHour === '' || theirRemindMinute === '')) {
         setFormError('已填写对方课程，请一并填写「提醒时间·对方」（必填）'); return
       }
@@ -109,13 +171,13 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
       const swapInfo = {
         myDate: myDateStr,
         myWeek: myWeek,
-        myPeriod: myPeriod.trim() || '1',
+        myPeriod: buildPeriodText(myPeriodStart, myPeriodCount) || '第1节',
         myClass: myClass.trim() || '未填写',
         myCourse: myCourse.trim() || '未填写',
         teacher: swapTeacher.trim() || '未填写',
         theirDate: theirDateStr,
         theirWeek: theirWeek,
-        theirPeriod: theirPeriod.trim() || '1',
+        theirPeriod: buildPeriodText(theirPeriodStart, theirPeriodCount) || '第1节',
         theirClass: theirClass.trim() || '未填写',
         theirCourse: theirCourse.trim() || '未填写',
         remark: newTitle.trim(),
@@ -156,12 +218,20 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
       setSwapTeacher('')
       setTheirClass('')
       setTheirCourse('')
-      setMyPeriod('')
-      setTheirPeriod('')
+      setMySeg('')
+      setMyPeriodStart('')
+      setMyPeriodCount(1)
+      setTheirSeg('')
+      setTheirPeriodStart('')
+      setTheirPeriodCount(1)
       setTheirRemindMonth('')
       setTheirRemindDay('')
       setTheirRemindHour('')
       setTheirRemindMinute('')
+      // 复位联动标记，下次填写重新启用自动带入
+      setTheirClassTouched(false)
+      setRemindDateTouched(false)
+      setTheirRemindDateTouched(false)
     } else {
       if (newHour === '' || newMinute === '') { setFormError('请填写日程时间（时、分）'); return }
       const timeStr = `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`
@@ -461,7 +531,11 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
                     <ColoredSelect theme="purple" value={myDateMonth} onChange={(v) => setMyDateMonth(v)} options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
                     <ColoredSelect theme="purple" value={myDateDay} onChange={(v) => setMyDateDay(v)} options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
                     <ColoredSelect theme="purple" value={myWeek} onChange={(v) => setMyWeek(v)} placeholder="周" options={Array.from({ length: 26 }, (_, i) => ({ value: i + 1, label: `第${i + 1}周` }))} />
-                    <input type="text" value={myPeriod} onChange={(e) => setMyPeriod(e.target.value)} placeholder="节次（如1、2节课）" style={{ flex: 1, background: 'rgba(186,104,200,0.1)', border: '1px solid rgba(186,104,200,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
+                    <ColoredSelect theme="purple" value={mySeg} onChange={(v) => { setMySeg(v); setMyPeriodStart(''); setMyPeriodCount(1) }} placeholder="时段" options={TIME_SEGMENTS.map((s) => ({ value: s.key, label: s.label }))} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <ColoredSelect theme="purple" value={myPeriodStart} onChange={(v) => { setMyPeriodStart(v); setMyPeriodCount(1) }} placeholder="节次" style={{ flex: 1 }} options={myPeriodOptions} />
+                    <ColoredSelect theme="purple" value={myPeriodCount} onChange={(v) => setMyPeriodCount(v)} placeholder="连上" style={{ flex: 1 }} options={countOptions} />
                   </div>
                   <input type="text" value={myClass} onChange={(e) => setMyClass(e.target.value)} placeholder="班级（如：25级护理1班）" style={{ background: 'rgba(186,104,200,0.1)', border: '1px solid rgba(186,104,200,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
                   <input type="text" value={myCourse} onChange={(e) => setMyCourse(e.target.value)} placeholder="课程名称（如：健康评估）" style={{ background: 'rgba(186,104,200,0.1)', border: '1px solid rgba(186,104,200,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
@@ -473,25 +547,29 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
                     <ColoredSelect theme="blue" value={theirDateMonth} onChange={(v) => setTheirDateMonth(v)} options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
                     <ColoredSelect theme="blue" value={theirDateDay} onChange={(v) => setTheirDateDay(v)} options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
                     <ColoredSelect theme="blue" value={theirWeek} onChange={(v) => setTheirWeek(v)} placeholder="周" options={Array.from({ length: 26 }, (_, i) => ({ value: i + 1, label: `第${i + 1}周` }))} />
-                    <input type="text" value={theirPeriod} onChange={(e) => setTheirPeriod(e.target.value)} placeholder="节次（如1、2节课）" style={{ flex: 1, background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
+                    <ColoredSelect theme="blue" value={theirSeg} onChange={(v) => { setTheirSeg(v); setTheirPeriodStart(''); setTheirPeriodCount(1) }} placeholder="时段" options={TIME_SEGMENTS.map((s) => ({ value: s.key, label: s.label }))} />
                   </div>
-                  <input type="text" value={theirClass} onChange={(e) => setTheirClass(e.target.value)} placeholder="对方班级" style={{ background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <ColoredSelect theme="blue" value={theirPeriodStart} onChange={(v) => { setTheirPeriodStart(v); setTheirPeriodCount(1) }} placeholder="节次" style={{ flex: 1 }} options={theirPeriodOptions} />
+                    <ColoredSelect theme="blue" value={theirPeriodCount} onChange={(v) => setTheirPeriodCount(v)} placeholder="连上" style={{ flex: 1 }} options={countOptions} />
+                  </div>
+                  <input type="text" value={theirClass} onChange={(e) => { setTheirClass(e.target.value); setTheirClassTouched(true) }} placeholder="对方班级" style={{ background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
                   <input type="text" value={theirCourse} onChange={(e) => setTheirCourse(e.target.value)} placeholder="对方课程名称" style={{ background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
 
                   {/* 提醒时间 */}
                   <div style={{ fontSize: 12, color: '#FF5252', letterSpacing: 1, marginTop: 2 }}>提醒时间</div>
                   <div style={{ fontSize: 11, color: 'rgba(255,82,82,0.8)', letterSpacing: 1 }}>自己 <span style={{ color: '#FF5252' }}>*</span></div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <ColoredSelect theme="red" value={remindMonth} onChange={(v) => setRemindMonth(v)} placeholder="月" options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
-                    <ColoredSelect theme="red" value={remindDay} onChange={(v) => setRemindDay(v)} placeholder="日" options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
+                    <ColoredSelect theme="red" value={remindMonth} onChange={(v) => { setRemindMonth(v); setRemindDateTouched(true) }} placeholder="月" options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
+                    <ColoredSelect theme="red" value={remindDay} onChange={(v) => { setRemindDay(v); setRemindDateTouched(true) }} placeholder="日" options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
                     <ColoredSelect theme="red" value={remindHour} onChange={(v) => setRemindHour(v)} placeholder="时" options={Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}时` }))} />
                     <ColoredSelect theme="red" value={remindMinute} onChange={(v) => setRemindMinute(v)} placeholder="分" options={Array.from({ length: 60 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}分` }))} />
                   </div>
                   {/* 是否同时提醒对方，由用户自行决定 */}
                   <div style={{ fontSize: 11, color: 'rgba(255,82,82,0.8)', letterSpacing: 1, marginTop: 4 }}>对方（教师）</div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <ColoredSelect theme="red" value={theirRemindMonth} onChange={(v) => setTheirRemindMonth(v)} placeholder="月" options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
-                    <ColoredSelect theme="red" value={theirRemindDay} onChange={(v) => setTheirRemindDay(v)} placeholder="日" options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
+                    <ColoredSelect theme="red" value={theirRemindMonth} onChange={(v) => { setTheirRemindMonth(v); setTheirRemindDateTouched(true) }} placeholder="月" options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
+                    <ColoredSelect theme="red" value={theirRemindDay} onChange={(v) => { setTheirRemindDay(v); setTheirRemindDateTouched(true) }} placeholder="日" options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
                     <ColoredSelect theme="red" value={theirRemindHour} onChange={(v) => setTheirRemindHour(v)} placeholder="时" options={Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}时` }))} />
                     <ColoredSelect theme="red" value={theirRemindMinute} onChange={(v) => setTheirRemindMinute(v)} placeholder="分" options={Array.from({ length: 60 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}分` }))} />
                   </div>
@@ -630,9 +708,9 @@ const CalendarView: React.FC<Props> = ({ onBack }) => {
                     paddingLeft: 44,
                     lineHeight: 1.8,
                   }}>
-                    <div style={{ color: '#4FC3F7' }}>【我的】{s.swapInfo.myDate} 第{s.swapInfo.myWeek}周 第{s.swapInfo.myPeriod}节 · {s.swapInfo.myClass} · {s.swapInfo.myCourse}</div>
+                    <div style={{ color: '#4FC3F7' }}>【我的】{s.swapInfo.myDate} 第{s.swapInfo.myWeek}周 {s.swapInfo.myPeriod} · {s.swapInfo.myClass} · {s.swapInfo.myCourse}</div>
                     {s.swapInfo.theirCourse && s.swapInfo.theirCourse !== '未填写' && (
-                      <div style={{ color: '#FFB74D' }}>【{s.swapInfo.teacher}】{s.swapInfo.theirDate} 第{s.swapInfo.theirWeek}周 第{s.swapInfo.theirPeriod}节 · {s.swapInfo.theirClass} · {s.swapInfo.theirCourse}</div>
+                      <div style={{ color: '#FFB74D' }}>【{s.swapInfo.teacher}】{s.swapInfo.theirDate} 第{s.swapInfo.theirWeek}周 {s.swapInfo.theirPeriod} · {s.swapInfo.theirClass} · {s.swapInfo.theirCourse}</div>
                     )}
                     {s.swapInfo.remark && (
                       <div style={{ color: 'rgba(255,255,255,0.8)' }}>【备注】{s.swapInfo.remark}</div>

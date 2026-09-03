@@ -216,3 +216,172 @@ button:not(.nokia-titlebar-btn):not(.mini-icon-btn):active {
   transform: translateY(0) scale(0.97);
   filter: brightness(0.92);
 }
+
+/* ===== 课表总览打印 ===== */
+/* 屏幕上隐藏打印专用标题 */
+.timetable-print-title {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  html, body, #root {
+    background: #fff !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* 隐藏标题栏（含打印/课表输入按钮） */
+  .timetable-print .nokia-titlebar {
+    display: none !important;
+  }
+
+  /* 打印专用标题 */
+  .timetable-print .timetable-print-title {
+    display: block !important;
+    font-size: 18px;
+    font-weight: 500;
+    color: #1b263b;
+    letter-spacing: 4px;
+    text-align: center;
+    padding: 4px 0 10px;
+  }
+
+  /* 容器：去掉深色渐变、圆角、高度限制 */
+  .timetable-print {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* 解除滚动区限制，保证长表完整分页打印 */
+  .timetable-print .timetable-scroll {
+    flex: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  /* 白底深色字，仅替换颜色不改变布局 */
+  .timetable-print * {
+    color: #1b263b !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* 表格网格线加深，保证黑白打印可见 */
+  .timetable-print th,
+  .timetable-print td {
+    border-color: #8aa0b8 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 表头取消吸顶，避免分页时重复/错位 */
+  .timetable-print th {
+    position: static !important;
+  }
+
+  /* 跨页时避免行内单元格被截断 */
+  .timetable-print tr,
+  .timetable-print td,
+  .timetable-print th {
+    page-break-inside: avoid;
+  }
+
+  /* ===== 整页 A4（纵向）排版 ===== */
+  /* 时段之间的占位分隔行：打印时保留，压成 1mm 细缝（屏幕上仍是 6px） */
+  .timetable-print .timetable-sep td {
+    height: 1mm !important;
+    min-height: 0 !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* 整表禁止分页：课表完整收进一张 A4 */
+  .timetable-print table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    font-size: 12px !important;
+    width: 100% !important;
+  }
+
+  /* 行高按整页设计：A4 可打印高度约 1047px，
+     标题 ~44px + 表头 ~34px + 10 行 × 86px ≈ 938px，铺满且留余量 */
+  .timetable-print td {
+    height: 86px !important;
+    padding: 6px 8px !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+  }
+
+  /* 表头 */
+  .timetable-print th {
+    padding: 8px 6px !important;
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* 课程名放大居中，班级/教室/连堂/时间用小字 */
+  .timetable-print td > div:first-child {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    margin-top: 0 !important;
+  }
+
+  .timetable-print td div {
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    margin-top: 2px !important;
+  }
+
+  /* 节次列的时间：缩小到 9px，保证 "08:00-08:45" 不超出窄列 */
+  .timetable-print td div.period-time {
+    font-size: 9px !important;
+    font-weight: 400 !important;
+    line-height: 1.1 !important;
+    margin-top: 1px !important;
+  }
+
+  /* 左侧时段竖排标签 */
+  .timetable-print td span[style*="vertical-rl"] {
+    font-size: 12px !important;
+    letter-spacing: 4px !important;
+  }
+
+  /* 时段标签列：窄列（22px）不吃左右 padding，保证竖排文字水平居中 */
+  .timetable-print td.seg-label-td {
+    padding: 0 !important;
+    text-align: center !important;
+  }
+
+  /* 调课标记格：打印/PDF 中以淡红底+红边呈现 */
+  .timetable-print td.swap-hl {
+    background: #FFEBEE !important;
+    border: 1.5px solid #E53935 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .timetable-print td.swap-hl > div:first-child {
+    color: #C62828 !important;
+    font-size: 12px !important;
+  }
+
+  /* 打印标题 */
+  .timetable-print .timetable-print-title {
+    font-size: 20px !important;
+    padding: 2px 0 12px !important;
+  }
+}
+
