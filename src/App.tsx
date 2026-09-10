@@ -5,7 +5,9 @@ import HourlyForecast from './components/HourlyForecast'
 import DailyForecast from './components/DailyForecast'
 import CalendarView from './components/CalendarView'
 import TimetableView from './components/TimetableView'
+import SettingsView from './components/SettingsView'
 import WeatherIcon from './components/WeatherIcon'
+import { useTheme } from './theme'
 import { useWeather } from './hooks/useWeather'
 import { useSchedules, Urgency } from './hooks/useSchedules'
 
@@ -47,7 +49,7 @@ const App: React.FC = () => {
   const weather = useWeather()
   const { getTopUrgencyByDate, getDueSchedules } = useSchedules()
   const [expanded, setExpanded] = useState(isPrintTimetable)
-  const [viewMode, setViewMode] = useState<'weather' | 'calendar' | 'timetable'>(isPrintTimetable ? 'timetable' : 'weather')
+  const [viewMode, setViewMode] = useState<'weather' | 'calendar' | 'timetable' | 'settings'>(isPrintTimetable ? 'timetable' : 'weather')
   const [refreshing, setRefreshing] = useState(false)
   const [showCityDialog, setShowCityDialog] = useState(false)
   const [cityInput, setCityInput] = useState('')
@@ -189,6 +191,27 @@ const App: React.FC = () => {
     window.electronAPI?.restoreIcon()
   }
 
+  const handleOpenSettings = () => {
+    setExpanded(true)
+    setViewMode('settings')
+    window.electronAPI?.expand()
+  }
+
+  const handleBackFromSettings = () => {
+    setExpanded(false)
+    setViewMode('weather')
+    window.electronAPI?.restoreIcon()
+  }
+
+  const { theme, ac } = useTheme()
+
+  // 启动时把持久化的置顶设置同步给主进程（用户上次可能关掉了置顶）
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('xianren-always-on-top') === '0') window.electronAPI?.setAlwaysOnTop?.(false)
+    } catch { /* ignore */ }
+  }, [])
+
   // ===== 收起状态：闪烁入口计算 =====
   const flashToday = getTodayStr()
   const flashNow = getNowTimeStr()
@@ -230,7 +253,7 @@ const App: React.FC = () => {
     WebkitAppRegion: 'no-drag',
     display: 'flex',
     alignItems: 'center',
-    padding: '2px 8px',
+    padding: '2px 3px',
     borderRadius: 4,
     color: 'rgba(255,255,255,0.8)',
     fontSize: 12,
@@ -484,8 +507,8 @@ const App: React.FC = () => {
                   display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 14px',
+                  gap: 3,
+                  padding: '6px 6px',
                 }}>
                 <div onClick={() => handleOpenCalendar(false)} style={entryBtnStyle}>
                   <div style={vEntryStyle}>
@@ -500,6 +523,11 @@ const App: React.FC = () => {
                 <div onClick={handleOpenTimetable} style={entryBtnStyle}>
                   <div style={vEntryStyle}>
                     {'课表'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
+                  </div>
+                </div>
+                <div onClick={handleOpenSettings} style={entryBtnStyle}>
+                  <div style={vEntryStyle}>
+                    {'设置'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
                   </div>
                 </div>
               </div>
@@ -519,6 +547,10 @@ const App: React.FC = () => {
     return <TimetableView onBack={handleBackFromTimetable} />
   }
 
+  if (expanded && viewMode === 'settings') {
+    return <SettingsView onBack={handleBackFromSettings} />
+  }
+
   // === 展开状态：天气完整界面 ===
   return (
     <div
@@ -528,7 +560,7 @@ const App: React.FC = () => {
         flexDirection: 'column',
         overflow: 'hidden',
         borderRadius: 14,
-        background: 'linear-gradient(180deg, #0D1B2A 0%, #1B263B 50%, #243447 100%)',
+        background: theme.bg,
         boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
         animation: 'expandIn 0.3s ease',
         position: 'relative',
@@ -587,7 +619,7 @@ const App: React.FC = () => {
         >
           <div
             style={{
-              background: 'linear-gradient(135deg, #1B263B 0%, #243447 100%)',
+              background: theme.panel,
               borderRadius: 14,
               padding: '20px 24px',
               boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
@@ -656,7 +688,7 @@ const App: React.FC = () => {
                   padding: '6px 20px',
                   borderRadius: 8,
                   border: 'none',
-                  background: 'rgba(79,195,247,0.3)',
+                  background: ac(0.3),
                   color: 'rgba(255,255,255,0.8)',
                   fontSize: 12,
                   cursor: 'pointer',

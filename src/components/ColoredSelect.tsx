@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { useTheme } from '../theme'
 
 export type SelectTheme = 'purple' | 'blue' | 'red' | 'green'
 
@@ -34,7 +35,11 @@ function ColoredSelect<T extends string | number>({
 }: Props<T>) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const c = themeColors[theme]
+  // blue 主题跟随全局界面主题换肤；purple/red/green 为固定分类色
+  const { theme: appTheme, ac } = useTheme()
+  const c = theme === 'blue'
+    ? { border: ac(0.3), bg: ac(0.1), panel: appTheme.panel, active: ac(0.3) }
+    : themeColors[theme]
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

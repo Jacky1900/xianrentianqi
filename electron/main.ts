@@ -154,6 +154,22 @@ ipcMain.on('window-focus', () => {
   mainWindow?.focus()
 })
 
+// 设置：开机自动启动（Windows 写入登录启动项；dev 模式下指向 Electron 本身，打包后生效）
+ipcMain.handle('set-auto-launch', (_e, enable: boolean) => {
+  app.setLoginItemSettings({ openAtLogin: !!enable })
+  return true
+})
+
+ipcMain.handle('get-auto-launch', () => {
+  return app.getLoginItemSettings().openAtLogin
+})
+
+// 设置：窗口置顶开关，实时生效
+ipcMain.handle('set-always-on-top', (_e, enable: boolean) => {
+  mainWindow?.setAlwaysOnTop(!!enable)
+  return true
+})
+
 // 课表导出为 PDF：复用打印样式（@media print + @page A4 纵向），
 // 生成矢量 PDF（文字可选中），拷到其他电脑打开即可直接打印。
 // 弹对话框让用户选位置；所选位置写入失败时自动兜底（下载文件夹）。

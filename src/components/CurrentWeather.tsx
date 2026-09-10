@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react'
+import { useTheme } from '../theme'
 import type { CurrentWeather as CurrentWeatherType, WeatherAlert } from '../hooks/useWeather'
 import WeatherIcon from './WeatherIcon'
 
@@ -19,6 +20,7 @@ interface Props {
 }
 
 const CurrentWeather: React.FC<Props> = ({ data, city, alerts, onChangeCity }) => {
+  const { theme, ac } = useTheme()
   const alertRef = useRef<HTMLDivElement>(null)
   const [alertScrolling, setAlertScrolling] = useState(false)
 
@@ -66,7 +68,7 @@ const CurrentWeather: React.FC<Props> = ({ data, city, alerts, onChangeCity }) =
             onClick={onChangeCity}
             style={{
               fontSize: 10,
-              color: 'rgba(79,195,247,0.7)',
+              color: ac(0.7),
               cursor: 'pointer',
               letterSpacing: 1,
               fontWeight: 300,
@@ -77,8 +79,8 @@ const CurrentWeather: React.FC<Props> = ({ data, city, alerts, onChangeCity }) =
           </span>
           <span style={{
             fontSize: 9,
-            color: 'rgba(79,195,247,0.7)',
-            border: '1px solid rgba(79,195,247,0.3)',
+            color: ac(0.7),
+            border: `1px solid ${ac(0.3)}`,
             padding: '1px 5px',
             borderRadius: 3,
             letterSpacing: 1,
@@ -190,7 +192,7 @@ const CurrentWeather: React.FC<Props> = ({ data, city, alerts, onChangeCity }) =
           <div style={{ width: 1, background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 3, letterSpacing: 2 }}>降水</div>
-            <div style={{ fontSize: 11, color: data.precipitation > 0 ? '#4FC3F7' : 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
+            <div style={{ fontSize: 11, color: data.precipitation > 0 ? theme.accent : 'rgba(255,255,255,0.85)', fontWeight: 300 }}>
               {data.precipitation}mm
             </div>
           </div>

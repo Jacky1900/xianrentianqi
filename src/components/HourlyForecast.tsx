@@ -1,12 +1,14 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react'
 import type { HourlyForecast as HourlyForecastType } from '../hooks/useWeather'
 import WeatherIcon from './WeatherIcon'
+import { useTheme } from '../theme'
 
 interface Props {
   forecasts: HourlyForecastType[]
 }
 
 const HourlyForecast: React.FC<Props> = ({ forecasts }) => {
+  const { theme } = useTheme()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [scrollRatio, setScrollRatio] = useState(0) // 0~1
@@ -143,7 +145,7 @@ const HourlyForecast: React.FC<Props> = ({ forecasts }) => {
               {/* 时间 */}
               <div style={{
                 fontSize: 11,
-                color: i === 0 ? '#4FC3F7' : 'rgba(255,255,255,0.55)',
+                color: i === 0 ? theme.accent : 'rgba(255,255,255,0.55)',
                 fontWeight: i === 0 ? 400 : 300,
               }}>
                 {i === 0 ? '现在' : h.hour}
@@ -157,7 +159,7 @@ const HourlyForecast: React.FC<Props> = ({ forecasts }) => {
               {/* 降水概率 */}
               <div style={{
                 fontSize: 9,
-                color: h.precipitationProb >= 50 ? '#4FC3F7' : 'rgba(255,255,255,0.25)',
+                color: h.precipitationProb >= 50 ? theme.accent : 'rgba(255,255,255,0.25)',
                 minHeight: 12,
                 fontWeight: 300,
               }}>

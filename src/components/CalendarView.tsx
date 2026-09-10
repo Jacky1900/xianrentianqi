@@ -3,6 +3,7 @@ import { useSchedules, Urgency, ScheduleType } from '../hooks/useSchedules'
 import { getLunarDayInfo, getCellLabel, isSpecialDay } from '../utils/lunar'
 import { TIME_SEGMENTS, formatPeriodFullLabel } from '../hooks/useTimetable'
 import ColoredSelect from './ColoredSelect'
+import { useTheme } from '../theme'
 
 interface Props {
   onBack: () => void
@@ -16,6 +17,7 @@ function formatDate(year: number, month: number, day: number): string {
 }
 
 const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
+  const { theme, ac } = useTheme()
   const today = new Date()
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
@@ -250,7 +252,7 @@ const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
       flexDirection: 'column',
       overflow: 'hidden',
       borderRadius: 14,
-      background: 'linear-gradient(180deg, #0D1B2A 0%, #1B263B 50%, #243447 100%)',
+      background: theme.bg,
       boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
       WebkitAppRegion: 'no-drag',
     }}>
@@ -304,9 +306,9 @@ const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
                       style={{
                         padding: '6px 0',
                         borderRadius: 4,
-                        border: viewMonth === i ? '1px solid #4FC3F7' : '1px solid rgba(255,255,255,0.1)',
-                        background: viewMonth === i ? 'rgba(79,195,247,0.2)' : 'transparent',
-                        color: viewMonth === i ? '#4FC3F7' : 'rgba(255,255,255,0.6)',
+                        border: viewMonth === i ? `1px solid ${theme.accent}` : '1px solid rgba(255,255,255,0.1)',
+                        background: viewMonth === i ? ac(0.2) : 'transparent',
+                        color: viewMonth === i ? theme.accent : 'rgba(255,255,255,0.6)',
                         fontSize: 12,
                         cursor: 'pointer',
                       }}
@@ -379,14 +381,14 @@ const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
                   justifyContent: 'center',
                   cursor: 'pointer',
                   borderRadius: 6,
-                  background: isSelected ? 'rgba(79,195,247,0.2)' : 'transparent',
-                  border: isToday && !isSelected ? '1px solid rgba(79,195,247,0.4)' : 'none',
+                  background: isSelected ? ac(0.2) : 'transparent',
+                  border: isToday && !isSelected ? `1px solid ${ac(0.4)}` : 'none',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <span style={{
                     fontSize: 14,
-                    color: isSelected ? '#4FC3F7' : isWeekend ? 'rgba(255,150,150,0.7)' : 'rgba(255,255,255,0.7)',
+                    color: isSelected ? theme.accent : isWeekend ? 'rgba(255,150,150,0.7)' : 'rgba(255,255,255,0.7)',
                     fontWeight: isToday ? 400 : 300,
                   }}>
                     {day}
@@ -443,7 +445,7 @@ const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
                   </span>
                 )
               })()}
-              <span style={{ fontSize: 13, color: 'rgba(79,195,247,0.7)', letterSpacing: 1 }}>
+              <span style={{ fontSize: 13, color: ac(0.7), letterSpacing: 1 }}>
                 周{'日一二三四五六'[new Date(selectedDate).getDay()]}
               </span>
             </div>
@@ -459,9 +461,9 @@ const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
               style={{
                 flex: 1,
                 fontSize: 12,
-                color: '#4FC3F7',
+                color: theme.accent,
                 background: 'transparent',
-                border: '1px solid rgba(79,195,247,0.3)',
+                border: `1px solid ${ac(0.3)}`,
                 borderRadius: 4,
                 padding: '4px 8px',
                 cursor: 'pointer',
@@ -541,8 +543,8 @@ const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
                   <input type="text" value={myCourse} onChange={(e) => setMyCourse(e.target.value)} placeholder="课程名称（如：健康评估）" style={{ background: 'rgba(186,104,200,0.1)', border: '1px solid rgba(186,104,200,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
 
                   {/* 对方的课程信息 */}
-                  <div style={{ fontSize: 12, color: '#4FC3F7', letterSpacing: 1, marginTop: 2 }}>对方课程</div>
-                  <input type="text" value={swapTeacher} onChange={(e) => setSwapTeacher(e.target.value)} placeholder="对方教师姓名" style={{ background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
+                  <div style={{ fontSize: 12, color: theme.accent, letterSpacing: 1, marginTop: 2 }}>对方课程</div>
+                  <input type="text" value={swapTeacher} onChange={(e) => setSwapTeacher(e.target.value)} placeholder="对方教师姓名" style={{ background: ac(0.1), border: `1px solid ${ac(0.3)}`, borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
                   <div style={{ display: 'flex', gap: 6 }}>
                     <ColoredSelect theme="blue" value={theirDateMonth} onChange={(v) => setTheirDateMonth(v)} options={Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `${i + 1}月` }))} />
                     <ColoredSelect theme="blue" value={theirDateDay} onChange={(v) => setTheirDateDay(v)} options={Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: `${i + 1}日` }))} />
@@ -553,8 +555,8 @@ const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
                     <ColoredSelect theme="blue" value={theirPeriodStart} onChange={(v) => { setTheirPeriodStart(v); setTheirPeriodCount(1) }} placeholder="节次" style={{ flex: 1 }} options={theirPeriodOptions} />
                     <ColoredSelect theme="blue" value={theirPeriodCount} onChange={(v) => setTheirPeriodCount(v)} placeholder="连上" style={{ flex: 1 }} options={countOptions} />
                   </div>
-                  <input type="text" value={theirClass} onChange={(e) => { setTheirClass(e.target.value); setTheirClassTouched(true) }} placeholder="对方班级" style={{ background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
-                  <input type="text" value={theirCourse} onChange={(e) => setTheirCourse(e.target.value)} placeholder="对方课程名称" style={{ background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
+                  <input type="text" value={theirClass} onChange={(e) => { setTheirClass(e.target.value); setTheirClassTouched(true) }} placeholder="对方班级" style={{ background: ac(0.1), border: `1px solid ${ac(0.3)}`, borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
+                  <input type="text" value={theirCourse} onChange={(e) => setTheirCourse(e.target.value)} placeholder="对方课程名称" style={{ background: ac(0.1), border: `1px solid ${ac(0.3)}`, borderRadius: 4, padding: '4px 6px', color: '#fff', fontSize: 12, outline: 'none' }} />
 
                   {/* 提醒时间 */}
                   <div style={{ fontSize: 12, color: '#FF5252', letterSpacing: 1, marginTop: 2 }}>提醒时间</div>
@@ -608,7 +610,7 @@ const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
                 style={{
                   fontSize: 11,
                   color: '#fff',
-                  background: 'rgba(79,195,247,0.3)',
+                  background: ac(0.3),
                   border: 'none',
                   borderRadius: 4,
                   padding: '4px',
@@ -640,7 +642,7 @@ const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
                   : s.urgency === 'urgent' ? '2px solid #FF5252' : s.urgency === 'important' ? '2px solid #FFD54F' : 'none',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 11, color: '#4FC3F7', minWidth: 36 }}>
+                  <span style={{ fontSize: 11, color: theme.accent, minWidth: 36 }}>
                     {s.time}
                   </span>
                   {s.type === 'swap' && (
@@ -708,7 +710,7 @@ const CalendarView: React.FC<Props> = ({ onBack, initialShowSwapForm }) => {
                     paddingLeft: 44,
                     lineHeight: 1.8,
                   }}>
-                    <div style={{ color: '#4FC3F7' }}>【我的】{s.swapInfo.myDate} 第{s.swapInfo.myWeek}周 {s.swapInfo.myPeriod} · {s.swapInfo.myClass} · {s.swapInfo.myCourse}</div>
+                    <div style={{ color: theme.accent }}>【我的】{s.swapInfo.myDate} 第{s.swapInfo.myWeek}周 {s.swapInfo.myPeriod} · {s.swapInfo.myClass} · {s.swapInfo.myCourse}</div>
                     {s.swapInfo.theirCourse && s.swapInfo.theirCourse !== '未填写' && (
                       <div style={{ color: '#FFB74D' }}>【{s.swapInfo.teacher}】{s.swapInfo.theirDate} 第{s.swapInfo.theirWeek}周 {s.swapInfo.theirPeriod} · {s.swapInfo.theirClass} · {s.swapInfo.theirCourse}</div>
                     )}

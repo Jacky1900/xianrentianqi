@@ -1,6 +1,7 @@
 import React from 'react'
 import { TimetableSlot, periodOrder, formatPeriodRange, formatPeriodTime, TIME_SEGMENTS, PeriodTime, parsePeriodText } from '../hooks/useTimetable'
 import { useSchedules } from '../hooks/useSchedules'
+import { useTheme } from '../theme'
 
 const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 
@@ -21,6 +22,7 @@ interface CellPlan {
 }
 
 const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) => {
+  const { theme, ac } = useTheme()
   const today = new Date()
   const todayWeekday = today.getDay() === 0 ? 7 : today.getDay()
 
@@ -149,8 +151,8 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
     fontSize: 13,
     fontWeight: 400,
     color: 'rgba(255,255,255,0.75)',
-    background: 'rgba(79,195,247,0.14)',
-    border: '1px solid rgba(79,195,247,0.5)',
+    background: ac(0.14),
+    border: `1px solid ${ac(0.5)}`,
     position: 'sticky',
     top: 0,
     zIndex: 2,
@@ -164,7 +166,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
       flexDirection: 'column',
       overflow: 'hidden',
       borderRadius: 14,
-      background: 'linear-gradient(180deg, #0D1B2A 0%, #1B263B 50%, #243447 100%)',
+      background: theme.bg,
       boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
       position: 'relative',
     }}>
@@ -180,10 +182,10 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
         <button className="nokia-titlebar-btn" onClick={handleExportPDF} disabled={exporting} title="一键导出 PDF（自动保存，可在其他电脑打印）" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 6px', marginRight: 6, whiteSpace: 'nowrap', color: '#69F0AE' }}>
           {exporting ? '导出中…' : '存PDF'}
         </button>
-        <button className="nokia-titlebar-btn" onClick={() => window.print()} title="打印课表" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 6px', marginRight: 6, whiteSpace: 'nowrap', color: '#4FC3F7' }}>
+        <button className="nokia-titlebar-btn" onClick={() => window.print()} title="打印课表" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 6px', marginRight: 6, whiteSpace: 'nowrap', color: theme.accent }}>
           打印
         </button>
-        <button className="nokia-titlebar-btn" onClick={onBack} title="进入课表输入" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 6px', whiteSpace: 'nowrap', color: '#4FC3F7' }}>
+        <button className="nokia-titlebar-btn" onClick={onBack} title="进入课表输入" style={{ fontSize: 14, letterSpacing: 2, width: 'auto', padding: '0 6px', whiteSpace: 'nowrap', color: theme.accent }}>
           课表输入
         </button>
       </div>
@@ -200,7 +202,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
             fontSize: 12,
             padding: '5px 14px',
             borderRadius: 12,
-            border: '1px solid rgba(79,195,247,0.3)',
+            border: `1px solid ${ac(0.3)}`,
             whiteSpace: 'nowrap',
           }}>
             {pdfTip}
@@ -234,8 +236,8 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                     <th key={wd} style={{
                       ...thBase,
                       textAlign: 'center',
-                      color: isToday ? '#4FC3F7' : 'rgba(255,255,255,0.75)',
-                      background: isToday ? 'rgba(79,195,247,0.28)' : 'rgba(79,195,247,0.14)',
+                      color: isToday ? theme.accent : 'rgba(255,255,255,0.75)',
+                      background: isToday ? ac(0.28) : ac(0.14),
                       letterSpacing: 1,
                     }}>
                       {label}
@@ -260,7 +262,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                   {segMeta[p].isSegStart && (
                     <td rowSpan={segMeta[p].segRows} className="seg-label-td" style={{
                       padding: 0,
-                      border: '1px solid rgba(79,195,247,0.35)',
+                      border: `1px solid ${ac(0.35)}`,
                       background: 'rgba(255,255,255,0.02)',
                       textAlign: 'center',
                       verticalAlign: 'middle',
@@ -275,7 +277,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                     fontWeight: 500,
                     color: 'rgba(255,255,255,0.55)',
                     background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(79,195,247,0.35)',
+                    border: `1px solid ${ac(0.35)}`,
                     whiteSpace: 'nowrap',
                   }}>
                     {`第${segMeta[p].segIdx}节`}
@@ -300,8 +302,8 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                       return (
                         <td key={wd} className={hl ? 'swap-hl' : undefined} title={hl ? swapTip(wd, p) : undefined} style={{
                         padding: '8px 6px',
-                        border: hl ? '1px solid rgba(255,82,82,0.6)' : '1px solid rgba(79,195,247,0.35)',
-                        background: hl ? 'rgba(255,82,82,0.25)' : (isTodayCol ? 'rgba(79,195,247,0.08)' : 'transparent'),
+                        border: hl ? '1px solid rgba(255,82,82,0.6)' : `1px solid ${ac(0.35)}`,
+                        background: hl ? 'rgba(255,82,82,0.25)' : (isTodayCol ? ac(0.08) : 'transparent'),
                         height: 44,
                         }} />
                       )
@@ -316,9 +318,9 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                       <td key={wd} rowSpan={cell.rowspan} className={hl ? 'swap-hl' : undefined} title={hl ? tips.join('\n') : undefined} style={{
                         padding: '9px 9px',
                         verticalAlign: 'top',
-                        border: hl ? '1px solid rgba(255,82,82,0.6)' : '1px solid rgba(79,195,247,0.35)',
-                        borderLeft: hl ? '2px solid #FF5252' : '2px solid #4FC3F7',
-                        background: hl ? 'rgba(255,82,82,0.3)' : (isTodayCol ? 'rgba(79,195,247,0.2)' : 'rgba(79,195,247,0.1)'),
+                        border: hl ? '1px solid rgba(255,82,82,0.6)' : `1px solid ${ac(0.35)}`,
+                        borderLeft: hl ? '2px solid #FF5252' : `2px solid ${theme.accent}`,
+                        background: hl ? 'rgba(255,82,82,0.3)' : (isTodayCol ? ac(0.2) : ac(0.1)),
                         borderRadius: 4,
                       }}>
                         {hl && (
@@ -340,7 +342,7 @@ const TimetableGrid: React.FC<Props> = ({ slots, periodTimes, onBack, onHome }) 
                           </div>
                         )}
                         {cell.rowspan > 1 && (
-                          <div style={{ fontSize: 12, color: 'rgba(79,195,247,0.85)', marginTop: 3 }}>
+                          <div style={{ fontSize: 12, color: ac(0.85), marginTop: 3 }}>
                             {formatPeriodRange(p, p + cell.rowspan - 1)}
                           </div>
                         )}

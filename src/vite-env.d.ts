@@ -11,6 +11,9 @@ interface ElectronAPI {
   setPosition: (x: number, y: number) => void
   getPosition: () => number[]
   focus: () => void
+  setAutoLaunch: (enable: boolean) => Promise<boolean>
+  getAutoLaunch: () => Promise<boolean>
+  setAlwaysOnTop: (enable: boolean) => Promise<boolean>
 }
 
 interface Window {

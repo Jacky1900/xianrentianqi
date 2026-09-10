@@ -11,4 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setPosition: (x: number, y: number) => ipcRenderer.send('window-set-position', x, y),
   getPosition: () => ipcRenderer.sendSync('window-get-position'),
   focus: () => ipcRenderer.send('window-focus'),
+  setAutoLaunch: (enable: boolean) => ipcRenderer.invoke('set-auto-launch', enable),
+  getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
+  setAlwaysOnTop: (enable: boolean) => ipcRenderer.invoke('set-always-on-top', enable),
 })

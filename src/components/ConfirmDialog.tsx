@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+import { useTheme } from '../theme'
 
 interface Props {
   message: string
@@ -10,6 +11,7 @@ interface Props {
 // 原生 confirm 是系统模态对话框，弹出/关闭会夺走透明置顶窗口的键盘焦点，
 // 关闭后输入框长时间点击不出光标；此组件纯 DOM 实现，焦点始终不离开窗口。
 const ConfirmDialog: React.FC<Props> = ({ message, onOk, onCancel }) => {
+  const { theme, ac } = useTheme()
   // 默认焦点放在"取消"上，防误触（Enter 直接确认删除较危险）
   const cancelRef = useRef<HTMLButtonElement>(null)
 
@@ -36,8 +38,8 @@ const ConfirmDialog: React.FC<Props> = ({ message, onOk, onCancel }) => {
       <div style={{
         width: 240,
         maxWidth: '80%',
-        background: 'linear-gradient(180deg, #1B263B 0%, #243447 100%)',
-        border: '1px solid rgba(79,195,247,0.5)',
+        background: theme.panel,
+        border: `1px solid ${ac(0.5)}`,
         borderRadius: 10,
         boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
         padding: 14,
